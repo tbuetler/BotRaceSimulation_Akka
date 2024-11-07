@@ -1,0 +1,1 @@
+Special Week 2 (BTI5205), © ${license.years} ${license.owner}

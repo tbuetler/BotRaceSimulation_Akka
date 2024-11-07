@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>ch.bfh.akka.botrace</groupId>
+		<artifactId>actor-system</artifactId>
+		<version>1.1</version>
+	</parent>
+
+	<artifactId>common</artifactId>
+	<version>1.1</version>
+	<packaging>jar</packaging>
+
+	<name>Common</name>
+	<description>
+		This library defines the interface between the board and the bots of the
+		Bot-Race Akka cluster systems.
+	</description>
+
+	<!--
+	See:
+	https://stackoverflow.com/questions/10848715/multi-module-pom-creating-a-site-that-works
+	Answer which starts with "I have a similar case to the OP..."
+	-->
+	<distributionManagement>
+		<site>
+			<id>${project.artifactId}-site</id>
+			<url>${site.doc.url}</url>
+		</site>
+	</distributionManagement>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.typesafe.akka</groupId>
+			<artifactId>akka-actor-typed_${scala.binary.version}</artifactId>
+			<version>${akka.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.typesafe.akka</groupId>
+			<artifactId>akka-serialization-jackson_${scala.binary.version}</artifactId>
+			<version>${akka.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
+			<version>${jackson.module.scala.version}</version>
+		</dependency>
+	</dependencies>
+
+	<reporting>
+		<plugins>
+			<!-- Generate cross-reference -->
+			<plugin>
+				<artifactId>maven-jxr-plugin</artifactId>
+			</plugin>
+			<!-- Generate Javadoc -->
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+			</plugin>
+			<!-- Generate Checkstyle report -->
+			<plugin>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</reporting>
+
+</project>

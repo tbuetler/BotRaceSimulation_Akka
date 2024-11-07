@@ -1,0 +1,11 @@
+**/.DS_Store
+**/*.bkp
+**/*.dtmp
+.checkstyle
+.classpath
+.idea/
+.project
+.settings/
+bin/
+target/
+*.iml
