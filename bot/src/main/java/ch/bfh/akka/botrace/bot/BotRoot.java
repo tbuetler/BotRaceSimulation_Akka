@@ -13,6 +13,7 @@ import akka.actor.typed.receptionist.Receptionist.Listing;
 import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.common.BoardService;
 import ch.bfh.akka.botrace.common.Message;
+import ch.bfh.akka.botrace.common.botmessage.*;
 
 /**
  * The root actor of the Bot actor system.
@@ -53,6 +54,8 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
                 .messageAdapter(Listing.class, ListingResponse::new);
         context.getSystem().receptionist().tell(Receptionist.subscribe(serviceKeyForBoard, listingResponseAdapter));
         // TODO continue initialization, if necessary...
+
+        context.getSelf().tell(new RegisterMessage(botName, context.getSelf()));
     }
 
     /**
@@ -62,10 +65,38 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
      */
     @Override
     public Behavior<Message> onMessage(Message message) {
-        // TODO handle incoming messages
-        return Behaviors.same();
+        if (message instanceof PingResponseMessage) { // catch the ping response
+            return onPingResponse((PingResponseMessage) message);
+        } else if (message instanceof DeregisterMessage) { // catch the deregister message
+            return onDeregister((DeregisterMessage) message);
+        } else if (message instanceof ChosenDirectionMessage) { // catch the chosen direction message
+            return onChosenDirection((ChosenDirectionMessage) message);
+        } else if (message instanceof AvailableDirectionsRequestMessage) { // catch the available directions request message
+            return onAvailableDirectionsRequest((AvailableDirectionsRequestMessage) message);
+        } else {
+            // if the message is unknown
+            getContext().getLog().info("Received unknown message");
+            return this;
+        }
     }
 
-    // TODO add handlers for messages
-    // TODO add mechanism for phases, e.g., finite state machine
+    private Behavior<Message> onPingResponse(PingResponseMessage message) {
+        getContext().getLog().info("Ping response from: {}", message.name());
+        return this;
+    }
+
+    private Behavior<Message> onDeregister(DeregisterMessage message) {
+        getContext().getLog().info("Deregistering because: {}", message.reason());
+        return Behaviors.stopped();
+    }
+
+    private Behavior<Message> onChosenDirection(ChosenDirectionMessage message) {
+        getContext().getLog().info("Moving in direction: {}", message.chosenDirection());
+        return this;
+    }
+
+    private Behavior<Message> onAvailableDirectionsRequest(AvailableDirectionsRequestMessage message) {
+        getContext().getLog().info("Requesting available directions");
+        return this;
+    }
 }
