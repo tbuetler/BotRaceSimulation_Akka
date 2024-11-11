@@ -3,11 +3,14 @@
  */
 package ch.bfh.akka.botrace.board.cli;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
+import ch.bfh.akka.botrace.board.actor.Board;
 import ch.bfh.akka.botrace.board.actor.BoardRoot;
 import ch.bfh.akka.botrace.board.actor.ClusterListener;
+import ch.bfh.akka.botrace.common.Message;
 
 public class BoardMain {
     /**
@@ -27,9 +30,8 @@ public class BoardMain {
     private static Behavior<Void> rootBehavior() {
         return Behaviors.setup(context -> {
 
-            // TODO Create listener for cluster domain events
-
-            // TODO Create board root actor
+            context.spawn(ClusterListener.create(),"ClusterListener");
+            context.spawn(BoardRoot.create(new Board() {}), "BoardRoot");
 
             return Behaviors.empty();
         });
