@@ -3,16 +3,20 @@
  */
 package ch.bfh.akka.botrace.board.gui;
 
+import akka.actor.ActorSystem;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+
+import java.io.IOException;
 
 public class BoardMain extends Application {
 
@@ -27,6 +31,8 @@ public class BoardMain extends Application {
 	@FXML
 	private GridPane gamefield;
 
+	private ActorSystem actorSystem;
+
 	/**
 	 * Initialize the actor system.
 	 */
@@ -40,22 +46,45 @@ public class BoardMain extends Application {
 	 * @param primaryStage the primary stage for this application.
 	 */
 	@Override
-	public void start(Stage primaryStage) {
+	public void start(Stage primaryStage) throws IOException {
 		// TODO Replace the following by a 'real' GUI
-		Label label = new Label("Hello Akka programmer, please complete the GUI for the board");
-		StackPane pane = new StackPane(label);
-		Scene scene = new Scene(pane, 500, 200);
+		//Label label = new Label("Hello Akka programmer, please complete the GUI for the board");
+
+		// Load the FXML file
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("BoardMain.fxml"));
+		if (loader.getLocation() == null) {
+			throw new IllegalStateException("FXML file not found");
+		}
+		Parent root = loader.load();
+
+
+		// set up the GUI
+		Scene scene = new Scene(root, 500, 200);
 		primaryStage.setScene(scene);
-		primaryStage.setTitle("Board of Group xyz");
+		primaryStage.setTitle("Board of Group 06");
 		primaryStage.show();
+
+		// set up the event handlers
+		start.setOnAction(event -> startRace());
+		stop.setOnAction(event -> stopRace());
 	}
 
 	@Override
 	public void stop() {
 		// TODO Terminate actor system
+		actorSystem.terminate();
+		Platform.exit();
 	}
 
 	public static void main(String[] args) {
 		Application.launch(args);
+	}
+
+	public void startRace() {
+		System.out.println("Race started.");
+	}
+
+	public void stopRace() {
+		System.out.println("Race stopped.");
 	}
 }
