@@ -4,6 +4,10 @@ import akka.actor.typed.ActorSystem;
 import ch.bfh.akka.botrace.board.actor.BoardRoot;
 import ch.bfh.akka.botrace.board.model.BoardModel;
 import ch.bfh.akka.botrace.common.Message;
+import ch.bfh.akka.botrace.common.boardmessage.PauseMessage;
+import ch.bfh.akka.botrace.common.boardmessage.ResumeMessage;
+import ch.bfh.akka.botrace.common.boardmessage.SetupMessage;
+import ch.bfh.akka.botrace.common.boardmessage.StartMessage;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -19,7 +23,7 @@ public class BoardMain extends Application {
 
 	private static BoardModel boardModel;
 	private ActorSystem<Message> actorSystem;
-	private GridPane gamefield; // Spielfeld
+	private GridPane gamefield;
 	private ChoiceBox<Integer> speed;
 	private TableView<String> botTable;
 
@@ -64,12 +68,12 @@ public class BoardMain extends Application {
 		// Oberer Bereich: Status-Label
 		VBox topBox = new VBox(10);
 		topBox.setAlignment(Pos.CENTER);
-
 		botTable = createBotTable();
 		topBox.getChildren().add(botTable);
 
 		// Unterer Bereich: Steuerungsbuttons
 		HBox controlButtons = createControlButtons();
+		root.setBottom(controlButtons);
 
 		// Zentraler Bereich: Spielfeld
 		gamefield = createGameField();
@@ -77,10 +81,10 @@ public class BoardMain extends Application {
 
 		// Das Layout dem Hauptfenster hinzufügen
 		root.setTop(topBox);
-		root.setBottom(controlButtons);
+
 
 		// Szene erstellen und anzeigen
-		Scene scene = new Scene(root, 800, 600);
+		Scene scene = new Scene(root, 1200, 800);
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("BotRace Board");
 		primaryStage.show();
@@ -129,23 +133,28 @@ public class BoardMain extends Application {
 				for (int j = 0; j < currentBoard[i].length; j++) {
 					// Erstellen eines Rechtecks für jede Zelle
 					Rectangle cell = new Rectangle(30, 30);
-					if (currentBoard[i][j] == 'X') {
-						cell.setFill(Color.RED); // 'X' für einen Hindernis
-					} if (currentBoard[i][j] == 'S') {
-						cell.setFill(Color.GREEN); // 'S' für start
-					} if (currentBoard[i][j] == 'E') {
-						cell.setFill(Color.BLUE); // 'E' für Ziel
-					} if (currentBoard[i][j] == '_') {
-						cell.setFill(Color.WHITE); // '_' für leeres Feld
-					} else {
-						cell.setFill(Color.BLACK); // Wand
+					switch (currentBoard[i][j]) {
+						case 'X':
+							cell.setFill(Color.RED); // Hindernis
+							break;
+						case 'S':
+							cell.setFill(Color.GREEN); // start
+							break;
+						case 'E':
+							cell.setFill(Color.BLUE); // Ziel
+							break;
+						case '_':
+							cell.setFill(Color.WHITE); // leeres Feld
+							break;
+						default:
+							cell.setFill(Color.BLACK); // Wand
 					}
+
 					// Zelle im GridPane an der entsprechenden Position hinzufügen
 					gridPane.add(cell, j, i);
 				}
 			}
 		}
-
 		return gridPane;
 	}
 
@@ -166,28 +175,23 @@ public class BoardMain extends Application {
 		Button terminateRace = new Button("Terminate Race");
 
 		speed.setOnAction(event -> {
-			// TODO Implement setup race action
 			Integer selectedSpeed = speed.getValue();
-			System.out.println("Selected speed: " + selectedSpeed);
+			actorSystem.tell(new SetupMessage(selectedSpeed));
 		});
 
 		playRace.setOnAction(event -> {
-			// TODO Implement play race action
-			System.out.println("Not implemented");
+			actorSystem.tell(new StartMessage());
 		});
 
 		pauseRace.setOnAction(event -> {
-			// TODO Implement pause race action
-			System.out.println("Not implemented");
+			actorSystem.tell(new PauseMessage());
 		});
 
 		resumeRace.setOnAction(event -> {
-			// TODO Implement resume race action
-			System.out.println("Not implemented");
+			actorSystem.tell(new ResumeMessage());
 		});
 
-		terminateRace.setOnAction(event -> {
-			// TODO Implement terminate race action
+		terminateRace.setOnAction(event -> {;
 			if (actorSystem != null) {
 				actorSystem.terminate();
 			}
