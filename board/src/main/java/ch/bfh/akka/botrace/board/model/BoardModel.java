@@ -11,10 +11,7 @@ import ch.bfh.akka.botrace.common.Message;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Model for managing the state of the board. Implements the {@link Board}
@@ -166,7 +163,26 @@ public class BoardModel implements Board {
         }
     }
 
-    public char[][] getBoard() {
-        return board;
+    private String displayBoard(){
+
+        char[][] boardCopy = new char[board.length][];
+        for (int i = 0; i < board.length; i++) {
+            boardCopy[i] = board[i].clone();
+        }
+
+        //set players
+        for(Map.Entry<ActorRef<Message>, Position> entry : playerPosition.entrySet()) {
+            Position pos = entry.getValue();
+            String player = playerName.get(entry.getKey());
+
+
+            // Place the player's name on the board (e.g., just the first letter for simplicity)
+            if (pos.getRow() >= 0 && pos.getRow() < rows && pos.getCol() >= 0 && pos.getCol() < cols) {
+                boardCopy[pos.getRow()][pos.getCol()] = player.charAt(0);
+            }
+        }
+
+        return Arrays.deepToString(boardCopy);
     }
+
 }
