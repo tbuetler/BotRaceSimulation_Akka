@@ -165,4 +165,8 @@ public class BoardModel implements Board {
             return row;
         }
     }
+
+    public char[][] getBoard() {
+        return board;
+    }
 }
