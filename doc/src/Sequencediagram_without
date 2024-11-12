@@ -1,0 +1,94 @@
+title Sequencediagram Board-Bot-System\n<color:#blue>//for the optimal way for a bot to reach the destination without pause, waits, loops, interrupts, etc
+
+// Receptionist
+actor User #green
+actor Receptionist #red
+
+Board->Receptionist:<<event>> register @ Receptionist
+activate Board #grey
+activate Bot #grey
+Receptionist->Bot:<<message from receptionist> subscribe receptionist
+
+// einschub :)
+activate Bot #red
+
+// Board Setup
+parallel
+Board->>Board:<<event>> setup speed, etc.
+activate Board #red
+
+// Bot Setup
+parallel end
+timer RegisterTimeout
+abox left of Board:<color:#red>//Setup
+abox right of Bot:<color:#red>//PhaseStarting
+timer RegisterTimout
+deactivate Board
+deactivate Bot
+
+// Start Message from Receptionist
+group PhaseRunning
+User->Board:<<internal message>>StartRegisterMessage
+
+//---PhaseRunning---//
+// Board Register
+activate Board #blue
+Board->>Board:<<event>> register bot
+
+// Bot Register
+Board->>Bot:<<event>> SetupMessage
+activate Bot #blue
+abox left of Board:<color:#blue>//Register
+abox right of Bot:<color:#blue>//PhaseRegister
+Bot->>Board:<<internal message>> RegisterMessage
+deactivate Bot
+deactivate Board
+abox right of Bot:<color:#lightblue>//PhaseRady
+
+// Play Board
+Board->>Board: <<internal message>> StartRaceMessage
+Board->>Bot:<<event>> StartMessage
+activate Board #orange
+activate Bot #orange
+abox right of Bot:<color:#orange>//PhasePlaying
+abox left of Board:<color:#orange>//Play
+
+// PhaseReady Bot
+Bot->>Board:<<internal Message>> AvailableDirectionRequestMessage
+activate Board
+Board->>Bot:<<event>> AvailableDirectionsReplyMessage
+deactivate Board
+Bot->>Board:ChoosenDirectionMessage
+deactivate Board
+deactivate Bot
+Board->>Board:<<internal message>> Bot on target
+
+// Board Pause
+activate Board #green
+note left of Board://for all other bots pause
+Board->>Bot:<<event>> TargetReachedMessage
+activate Bot #green
+abox right of Bot:<color:#green>//TargetReached
+abox left of Board:<color:#green>//Pause
+
+// PhaseReached Bot
+Bot->>Board:DeregisterMessage
+deactivate Bot
+
+// Board Terminate all Bots
+Board->>Board:<<internal message>> TerminateRaceCommand
+Board->>Bot:<<event>> UnregisteredMessage
+
+// Board fully Terminated
+deactivate Board
+end
+note over Board, Bot#pink:at any time
+Board->>Bot:Ping
+Bot->>Board:ResponsePing
+
+
+// Terminated message
+note left of Board:**Back to setup or Terminate fully (suggested)**
+Board->>User:<<internal message>> Terminate
+deactivate Board
+deactivate Bot
