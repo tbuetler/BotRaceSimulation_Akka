@@ -110,6 +110,17 @@ public class BoardMain extends Application {
 		return table;
 	}
 
+	/**
+	 * Erstellt das Spielfeld für das Board, basierend auf den Daten im `BoardModel`.
+	 * Jede Zelle im Spielfeld wird als Rechteck dargestellt, dessen Farbe je nach Inhalt variiert:
+	 * - Rote Zellen ('X') stellen Hindernisse dar.
+	 * - Grüne Zellen ('S') repräsentieren den Startpunkt.
+	 * - Blaue Zellen ('E') markieren das Ziel.
+	 * - Weiße Zellen ('_') stellen leere Felder dar.
+	 * Die Zellen werden in einem `GridPane` angeordnet, um das Spielfeld darzustellen.
+	 *
+	 * @return Ein `GridPane`-Objekt, das das visualisierte Spielfeld enthält.
+	 */
 	private GridPane createGameField() {
 		// Erstellen des GridPane für das Spielfeld
 		GridPane gridPane = new GridPane();
