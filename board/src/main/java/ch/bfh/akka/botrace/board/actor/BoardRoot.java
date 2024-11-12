@@ -50,7 +50,7 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		super(context);
 		boardModel = board;
 
-		// TODO Initialize...
+		// TODO: Maby there are more things to initialize in constructor, idk yet
 		context.getLog().info(getClass().getSimpleName() + " created: " + this.getContext().getSelf());
 
 		// Register the board root actor at the receptionist
