@@ -1,6 +1,3 @@
-/*
- * Special Week 2 (BTI5205), © 2024 Berner Fachhochschule
- */
 package ch.bfh.akka.botrace.board.gui;
 
 import akka.actor.typed.ActorSystem;
@@ -8,204 +5,210 @@ import ch.bfh.akka.botrace.board.actor.BoardRoot;
 import ch.bfh.akka.botrace.board.model.BoardModel;
 import ch.bfh.akka.botrace.common.Message;
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import scala.Int;
+
+import java.io.IOException;
 
 public class BoardMain extends Application {
 
-	// Deklariert die Hauptkomponenten der GUI
-	private TableView<String> botTable; // Tabelle für die Bot-Informationen
-	private ChoiceBox<Integer> speed; // Wahlbox zur Auswahl der Geschwindigkeit
-	private Button setupRace, playRace, pauseRace, resumeRace, terminateRace; // Steuerungsbuttons
-	private GridPane gamefield; // Spielbereich als Raster für Bots und Hindernisse
-	private ActorSystem<Message> actorSystem; // Referenz zur Board Actor System
+	private static BoardModel boardModel;
+	private ActorSystem<Message> actorSystem;
+	private GridPane gamefield; // Spielfeld
+	private Label statusLabel;
+	private ChoiceBox<Integer> speed;
 
-    /**
-     * Initialize the actor system.
-     */
-    @Override
-    public void init() {
-        // TODO Initialize the board actor system, keep a reference to it.
-        actorSystem = ActorSystem.create(BoardRoot.create(new BoardModel()), "BoardActorSystem");
+	/**
+	 * Initialize the actor system.
+	 */
+	@Override
+	public void init() throws IOException {
+		// Initialisiert das BoardModel mit der Dateipfad für das Board
+		String boardChoiceShortcut = "";
+		int boardChoice = 1; // Please choose your board
+		switch(boardChoice) {
+			case 1:
+				boardChoiceShortcut = "board1.txt";
+			case 2:
+				boardChoiceShortcut = "board2.txt";
+			case 3:
+				boardChoiceShortcut = "board3.txt";
+			case 4:
+				boardChoiceShortcut = "board4.txt";
+			case 5:
+				boardChoiceShortcut = "board5.txt";
+
+		}
+		boardModel = new BoardModel("/home/tim/Documents/BFH/SpecialWeek/SpecialWeek_2/java-06/board/src/main/resources/ch/bfh/akka/botrace/board/model/" + boardChoiceShortcut);
+		actorSystem = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
 	}
 
-    /**
-     * Constructs the GUI and shows it to the user.
-     * @param primaryStage the primary stage for this application.
-     */
-    @Override
+	/**
+	 * Konstruktion und Anzeige der GUI.
+	 * @param primaryStage Hauptfenster der Anwendung.
+	 */
+	@Override
 	public void start(Stage primaryStage) {
-		// Erzeugt ein BorderPane als Hauptlayout
+		// Layout des Fensters
 		BorderPane root = new BorderPane();
 
-		// Oberer Bereich - Bot-Tabelle
-		botTable = createBotTable();
-		root.setTop(botTable);
+		// Oberer Bereich: Status-Label
+		VBox topBox = new VBox(10);
+		topBox.setAlignment(Pos.CENTER);
+		statusLabel = new Label("Spiel wird geladen...");
+		topBox.getChildren().add(statusLabel);
 
-		// Unterer Bereich - Steuerungsbuttons
+		// Unterer Bereich: Steuerungsbuttons
 		HBox controlButtons = createControlButtons();
-		root.setBottom(controlButtons);
 
-		// Zentraler Bereich - Spielfeld
+		// Zentraler Bereich: Spielfeld
 		gamefield = createGameField();
 		root.setCenter(gamefield);
 
-		// Initialisiert die Szene und zeigt sie an
+		// Das Layout dem Hauptfenster hinzufügen
+		root.setTop(topBox);
+		root.setBottom(controlButtons);
+
+		// Szene erstellen und anzeigen
 		Scene scene = new Scene(root, 800, 600);
 		primaryStage.setScene(scene);
-		primaryStage.setTitle("Board of Group 06");
+		primaryStage.setTitle("BotRace Board");
 		primaryStage.show();
 	}
 
-	/**
-	 * Erzeugt die Tabelle für die Anzeige der Bot-Informationen.
-	 * @return Eine TableView mit Spalten für Bot-Name, Actor-Referenz, Position, Distanz und Ping-Status.
-	 */
-	private TableView<String> createBotTable() {
-		TableView<String> table = new TableView<>();
-		table.setPrefHeight(150); // Setzt die Höhe der Tabelle
-
-		// Erzeugt und konfiguriert die einzelnen Spalten
-		TableColumn<String, String> botNameCol = new TableColumn<>("Bot Name");
-		botNameCol.setPrefWidth(100);
-
-		TableColumn<String, String> actorRefCol = new TableColumn<>("Actor Ref");
-		actorRefCol.setPrefWidth(250);
-
-		TableColumn<String, String> posCol = new TableColumn<>("Pos");
-		posCol.setPrefWidth(100);
-
-		TableColumn<String, String> distCol = new TableColumn<>("Dist");
-		distCol.setPrefWidth(75);
-
-		TableColumn<String, String> pingCol = new TableColumn<>("Ping Status");
-		pingCol.setPrefWidth(75);
-
-		// Fügt die Spalten zur Tabelle hinzu
-		table.getColumns().addAll(botNameCol, actorRefCol, posCol, distCol, pingCol);
-		return table;
-	}
-
-	/**
-	 * Erstellt eine HBox mit Steuerungsbuttons für das Rennen.
-	 * @return Eine HBox mit Buttons zum Steuern des Rennens.
-	 */
-	private HBox createControlButtons() {
-		HBox controlBox = new HBox(10); // HBox mit 10 Pixeln Abstand zwischen den Buttons
-
-		// Erzeugt die Steuerungsbuttons und fügt sie zur HBox hinzu
-		setupRace = new Button("Setup Race");
-		playRace = new Button("Play Race");
-		pauseRace = new Button("Pause Race");
-		resumeRace = new Button("Resume Race");
-		terminateRace = new Button("Terminate Race");
-
-		speed = new ChoiceBox<>();
-		speed.getItems().addAll(200, 500, 2000, 5000); //  speed optionen
-		speed.setValue(200); // Standardwert
-
-		speed.setOnAction(event -> {
-			Integer selectedSpeed = speed.getValue();
-			System.out.println("Selected speed: " + selectedSpeed);
-			// TODO Implement the speed change action
-		});
-
-		setupRace.setOnAction(event -> {
-			// TODO Implement the setup race action
-		});
-
-		playRace.setOnAction(event -> {
-			// TODO Implement the play race action
-		});
-
-		pauseRace.setOnAction(event -> {
-			// TODO Implement the pause race action
-		});
-
-		resumeRace.setOnAction(event -> {
-			// TODO Implement the resume race action
-		});
-
-		terminateRace.setOnAction(event -> {
-			stop();
-		});
-
-		controlBox.getChildren().addAll(setupRace, playRace, pauseRace, resumeRace, terminateRace, speed);
-		controlBox.setAlignment(Pos.CENTER); // Zentriert die Buttons
-		controlBox.setPrefHeight(50); // Setzt die Höhe des Steuerungsbereichs
-
-		return controlBox;
-	}
-
-	/**
-	 * Erstellt das Spielfeld als Raster für Bots und Hindernisse.
-	 * @return Ein GridPane, das das Spielfeld repräsentiert.
-	 */
 	private GridPane createGameField() {
-		GridPane grid = new GridPane();
-		grid.setPrefSize(600, 400); // Setzt die Größe des Spielfeldes
-		grid.setStyle("-fx-background-color: white;"); // Setzt den Hintergrund auf weiß
+		// Erstellen des GridPane für das Spielfeld
+		GridPane gridPane = new GridPane();
+		gridPane.setHgap(2); // Horizontaler Abstand zwischen den Zellen
+		gridPane.setVgap(2); // Vertikaler Abstand zwischen den Zellen
+		gridPane.setAlignment(Pos.CENTER); // Das GridPane wird im Zentrum des Fensters ausgerichtet
 
-		// Fügt Wände (graue Rechtecke) hinzu
-		for (int i = 1; i < 4; i++) {
-			for (int j = 1; j < 3; j++) {
-				Pane wall = new Pane();
-				wall.setStyle("-fx-background-color: gray;"); // Graue Farbe für die Wände
-				wall.setPrefSize(60, 60); // Setzt die Größe der Wände
-				grid.add(wall, i, j); // Fügt die Wand an eine Position im Raster hinzu
+		// Dimensionen des Spielfeldes anpassen (Basierend auf den Board-Daten)
+		char[][] currentBoard = boardModel.getBoard();
+		if (currentBoard != null) {
+			for (int i = 0; i < currentBoard.length; i++) {
+				for (int j = 0; j < currentBoard[i].length; j++) {
+					// Erstellen eines Rechtecks für jede Zelle
+					Rectangle cell = new Rectangle(50, 50);
+					if (currentBoard[i][j] == 'X') {
+						cell.setFill(Color.RED); // Beispiel: 'X' für einen Bot
+					} else {
+						cell.setFill(Color.LIGHTGRAY); // Beispiel: leeres Feld
+					}
+					// Zelle im GridPane an der entsprechenden Position hinzufügen
+					gridPane.add(cell, j, i);
+				}
 			}
 		}
 
-		// TODO: Hier können die Bots hinzugefügt werden. Diese dienen nur als Beispiel
-		// Fügt Bots (farbige Kreise) an verschiedene Positionen hinzu
-		Circle bot1 = createBotCircle(Color.BLUE, "Bot 1");
-		Circle bot2 = createBotCircle(Color.RED, "Bot 2");
-		Circle bot3 = createBotCircle(Color.GREEN, "Bot 3");
-		Circle bot4 = createBotCircle(Color.YELLOW, "Bot 4");
-
-		grid.add(bot1, 2, 5); // Positioniert Bot 1 im Raster
-		grid.add(bot2, 3, 3); // Positioniert Bot 2 im Raster
-		grid.add(bot3, 5, 2); // Positioniert Bot 3 im Raster
-		grid.add(bot4, 6, 4); // Positioniert Bot 4 im Raster
-
-		return grid;
+		return gridPane;
 	}
 
 	/**
-	 * Erzeugt einen farbigen Kreis für einen Bot.
-	 * @param color Die Farbe des Kreises (Bots).
-	 * @param botName Der Name des Bots für die Identifikation.
-	 * @return Ein Kreis, der den Bot repräsentiert.
+	 * Spielmenü anzeigen.
 	 */
-	private Circle createBotCircle(Color color, String botName) {
-		Circle bot = new Circle(20, color); // Erzeugt einen Kreis mit 20 Pixeln Radius und der angegebenen Farbe
-		bot.setUserData(botName); // Speichert den Namen des Bots in den User-Daten
-		Tooltip.install(bot, new Tooltip(botName)); // Tooltip zeigt den Namen des Bots an, wenn man über den Kreis fährt
-		return bot;
+	private void showGameMenu() {
+		VBox gameMenuBox = new VBox(10);
+		gameMenuBox.setAlignment(Pos.CENTER);
+
+		Button startGameButton = new Button("Spiel starten");
+		Button endGameButton = new Button("Spiel beenden");
+
+		startGameButton.setOnAction(event -> startGame());
+		endGameButton.setOnAction(event -> endGame());
+
+		gameMenuBox.getChildren().addAll(startGameButton, endGameButton);
+		gamefield.getChildren().clear(); // Löscht das Spielfeld
+		gamefield.add(gameMenuBox, 0, 0); // Spielmenü anzeigen
 	}
 
 	/**
-	 * Beendet die Anwendung und schließt die Plattform.
+	 * Spiel starten.
 	 */
-	@Override
-	public void stop() {
-		if (actorSystem != null) {
-			actorSystem.terminate();
+	private void startGame() {
+		statusLabel.setText("Spiel gestartet");
+		displayBoard();
+	}
+
+	/**
+	 * Spiel beenden.
+	 */
+	private void endGame() {
+		statusLabel.setText("Spiel beendet");
+		gamefield.getChildren().clear(); // Löscht das Spielfeld
+	}
+
+	/**
+	 * Spielfeld visualisieren.
+	 */
+	private void displayBoard() {
+		gamefield.getChildren().clear(); // Leert das Spielfeld, bevor es neu angezeigt wird
+		char[][] currentBoard = boardModel.getBoard();
+		if (currentBoard != null) {
+			for (int i = 0; i < currentBoard.length; i++) {
+				for (int j = 0; j < currentBoard[i].length; j++) {
+					Rectangle cell = new Rectangle(50, 50);
+					if (currentBoard[i][j] == 'X') {
+						cell.setFill(Color.RED); // Beispiel: 'X' für einen Bot
+					} else {
+						cell.setFill(Color.LIGHTGRAY); // Beispiel: leeres Feld
+					}
+					gamefield.add(cell, j, i); // Setzt das Rechteck an die entsprechende Position
+				}
+			}
 		}
-		Platform.exit(); // Schließt die JavaFX-Anwendung
 	}
 
 	/**
-	 * Hauptmethode zum Starten der Anwendung.
-	 * @param args Standard-Argumente für die Main-Methode
+	 * Steuerungsbuttons für das Spiel erstellen.
+	 * @return HBox mit Steuerungsbuttons.
 	 */
+	private HBox createControlButtons() {
+		HBox controlBox = new HBox(10);
+
+		speed = new ChoiceBox();
+		speed.getItems().addAll(200, 500, 2000, 5000);
+		speed.setValue(200); // Default value
+
+		Button playRace = new Button("Play Race");
+		Button pauseRace = new Button("Pause Race");
+		Button resumeRace = new Button("Resume Race");
+		Button terminateRace = new Button("Terminate Race");
+
+		speed.setOnAction(event -> {
+			// TODO Implement setup race action
+			Integer selectedSpeed = speed.getValue();
+			System.out.println("Selected speed: " + selectedSpeed);
+		});
+
+		playRace.setOnAction(event -> {
+			// TODO Implement play race action
+		});
+
+		pauseRace.setOnAction(event -> {
+			// TODO Implement pause race action
+		});
+
+		resumeRace.setOnAction(event -> {
+			// TODO Implement resume race action
+		});
+
+		terminateRace.setOnAction(event -> {
+			// TODO Implement terminate race action
+		});
+
+		controlBox.getChildren().addAll(speed, playRace, pauseRace, resumeRace, terminateRace);
+		controlBox.setAlignment(Pos.CENTER);
+		return controlBox;
+	}
+
 	public static void main(String[] args) {
-		launch(args); // Startet die JavaFX-Anwendung
+		launch(args);
 	}
 }
