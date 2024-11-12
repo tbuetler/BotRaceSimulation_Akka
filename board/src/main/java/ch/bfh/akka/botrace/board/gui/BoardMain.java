@@ -13,8 +13,6 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
-import scala.Int;
-
 import java.io.IOException;
 
 public class BoardMain extends Application {
@@ -22,7 +20,6 @@ public class BoardMain extends Application {
 	private static BoardModel boardModel;
 	private ActorSystem<Message> actorSystem;
 	private GridPane gamefield; // Spielfeld
-	private Label statusLabel;
 	private ChoiceBox<Integer> speed;
 
 	/**
@@ -84,8 +81,8 @@ public class BoardMain extends Application {
 	private GridPane createGameField() {
 		// Erstellen des GridPane für das Spielfeld
 		GridPane gridPane = new GridPane();
-		gridPane.setHgap(2); // Horizontaler Abstand zwischen den Zellen
-		gridPane.setVgap(2); // Vertikaler Abstand zwischen den Zellen
+		gridPane.setHgap(5); // Horizontaler Abstand zwischen den Zellen
+		gridPane.setVgap(5); // Vertikaler Abstand zwischen den Zellen
 		gridPane.setAlignment(Pos.CENTER); // Das GridPane wird im Zentrum des Fensters ausgerichtet
 
 		// Dimensionen des Spielfeldes anpassen (Basierend auf den Board-Daten)
@@ -96,9 +93,15 @@ public class BoardMain extends Application {
 					// Erstellen eines Rechtecks für jede Zelle
 					Rectangle cell = new Rectangle(30, 30);
 					if (currentBoard[i][j] == 'X') {
-						cell.setFill(Color.RED); // Beispiel: 'X' für einen Bot
+						cell.setFill(Color.RED); // 'X' für einen Hindernis
+					} if (currentBoard[i][j] == 'S') {
+						cell.setFill(Color.GREEN); // 'S' für start
+					} if (currentBoard[i][j] == 'E') {
+						cell.setFill(Color.BLUE); // 'E' für Ziel
+					} if (currentBoard[i][j] == '_') {
+						cell.setFill(Color.WHITE); // '_' für leeres Feld
 					} else {
-						cell.setFill(Color.LIGHTGRAY); // Beispiel: leeres Feld
+						cell.setFill(Color.BLACK); // Wand
 					}
 					// Zelle im GridPane an der entsprechenden Position hinzufügen
 					gridPane.add(cell, j, i);
@@ -133,18 +136,24 @@ public class BoardMain extends Application {
 
 		playRace.setOnAction(event -> {
 			// TODO Implement play race action
+			System.out.println("Not implemented");
 		});
 
 		pauseRace.setOnAction(event -> {
 			// TODO Implement pause race action
+			System.out.println("Not implemented");
 		});
 
 		resumeRace.setOnAction(event -> {
 			// TODO Implement resume race action
+			System.out.println("Not implemented");
 		});
 
 		terminateRace.setOnAction(event -> {
 			// TODO Implement terminate race action
+			if (actorSystem != null) {
+				actorSystem.terminate();
+			}
 			Platform.exit();
 		});
 
