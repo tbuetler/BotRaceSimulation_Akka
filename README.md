@@ -48,6 +48,16 @@ A bot maintains a set of phases, too:
 
 ![Phases of a Bot](img/bot-state-diagram.svg)
 
+## Sequencediagram
+
+The sequencediagram below shows the interaction. One with the loops, waits and interrupts.
+The one below shows the full interaction with everything.
+
+> **Note** It has been suggested to terminate at the end when the target is found instead of restart via setup phase.
+
+![Sequencediagram](img/Sequencediagram_without.svg)
+![Sequencediagram](img/Sequencediagram_with.svg)
+
 ## Configuration
 
 In order to run the Bot-Race actor system on
