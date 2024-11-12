@@ -13,6 +13,7 @@ import akka.actor.typed.receptionist.Receptionist.Listing;
 import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.common.BoardService;
 import ch.bfh.akka.botrace.common.Message;
+import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
 /**
@@ -58,6 +59,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         context.getSelf().tell(new RegisterMessage(botName, context.getSelf()));
     }
 
+    private ActorRef<Message> boardRef;
+    private String actorName = getContext().getSelf().path().name();
+
     /**
      * Handle incoming messages.
      * @param message a message
@@ -67,17 +71,34 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     public Behavior<Message> onMessage(Message message) {
 
         return switch(message){
-            case PingResponseMessage pingResponse                                      -> onPingResponse(pingResponse);
+            case PingMessage pingMessage                                      -> onPing(pingMessage);
             case DeregisterMessage deregisterMessage                                   -> onDeregister(deregisterMessage);
             case ChosenDirectionMessage chosenDirectionMessage                         -> onChosenDirection(chosenDirectionMessage);
             case AvailableDirectionsRequestMessage availableDirectionsRequestMessage   -> onAvailableDirectionsRequest(availableDirectionsRequestMessage);
+            case ListingResponse listingResponse -> onListingResponse(listingResponse);
 
             default -> throw new IllegalStateException("Unexpected value: " + message);
         };
     }
 
-    private Behavior<Message> onPingResponse(PingResponseMessage message) {
-        getContext().getLog().info("Ping response from: {}", message.name());
+    private Behavior<Message> onListingResponse(ListingResponse listingResponse) {
+        getContext().getLog().info("Received listing from receptionist");
+        for (ActorRef<Message> boardRef : listingResponse.listing.getServiceInstances(serviceKeyForBoard)) {
+            this.boardRef = boardRef;
+            getContext().getLog().info("Stored board reference from receptionist");
+        }
+        return this;
+    }
+
+    private Behavior<Message> onPing(PingMessage message) {
+        getContext().getLog().info("Bot {} got pinged", actorName);
+        if(boardRef != null){
+            boardRef.tell(new PingResponseMessage(actorName, getContext().getSelf()));
+            getContext().getLog().info("Bot {} responded to the ping", actorName);
+        }
+        else{
+            getContext().getLog().info("No board reference found");
+        }
         return this;
     }
 
