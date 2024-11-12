@@ -3,6 +3,10 @@
  */
 package ch.bfh.akka.botrace.board.gui;
 
+import akka.actor.typed.ActorSystem;
+import ch.bfh.akka.botrace.board.actor.BoardRoot;
+import ch.bfh.akka.botrace.board.model.BoardModel;
+import ch.bfh.akka.botrace.common.Message;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -20,8 +24,22 @@ public class BoardMain extends Application {
 	private ChoiceBox<Integer> speed; // Wahlbox zur Auswahl der Geschwindigkeit
 	private Button setupRace, playRace, pauseRace, resumeRace, terminateRace; // Steuerungsbuttons
 	private GridPane gamefield; // Spielbereich als Raster für Bots und Hindernisse
+	private ActorSystem<Message> actorSystem; // Referenz zur Board Actor System
 
-	@Override
+    /**
+     * Initialize the actor system.
+     */
+    @Override
+    public void init() {
+        // TODO Initialize the board actor system, keep a reference to it.
+        actorSystem = ActorSystem.create(BoardRoot.create(new BoardModel()), "BoardActorSystem");
+	}
+
+    /**
+     * Constructs the GUI and shows it to the user.
+     * @param primaryStage the primary stage for this application.
+     */
+    @Override
 	public void start(Stage primaryStage) {
 		// Erzeugt ein BorderPane als Hauptlayout
 		BorderPane root = new BorderPane();
@@ -88,6 +106,26 @@ public class BoardMain extends Application {
 		resumeRace = new Button("Resume Race");
 		terminateRace = new Button("Terminate Race");
 
+		setupRace.setOnAction(event -> {
+			// TODO Implement the setup race action
+		});
+
+		playRace.setOnAction(event -> {
+			// TODO Implement the play race action
+		});
+
+		pauseRace.setOnAction(event -> {
+			// TODO Implement the pause race action
+		});
+
+		resumeRace.setOnAction(event -> {
+			// TODO Implement the resume race action
+		});
+
+		terminateRace.setOnAction(event -> {
+			stop();
+		});
+
 		controlBox.getChildren().addAll(setupRace, playRace, pauseRace, resumeRace, terminateRace);
 		controlBox.setAlignment(Pos.CENTER); // Zentriert die Buttons
 		controlBox.setPrefHeight(50); // Setzt die Höhe des Steuerungsbereichs
@@ -147,6 +185,9 @@ public class BoardMain extends Application {
 	 */
 	@Override
 	public void stop() {
+		if (actorSystem != null) {
+			actorSystem.terminate();
+		}
 		Platform.exit(); // Schließt die JavaFX-Anwendung
 	}
 
