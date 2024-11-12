@@ -5,6 +5,7 @@ import ch.bfh.akka.botrace.board.actor.BoardRoot;
 import ch.bfh.akka.botrace.board.model.BoardModel;
 import ch.bfh.akka.botrace.common.Message;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -61,8 +62,6 @@ public class BoardMain extends Application {
 		// Oberer Bereich: Status-Label
 		VBox topBox = new VBox(10);
 		topBox.setAlignment(Pos.CENTER);
-		statusLabel = new Label("Spiel wird geladen...");
-		topBox.getChildren().add(statusLabel);
 
 		// Unterer Bereich: Steuerungsbuttons
 		HBox controlButtons = createControlButtons();
@@ -95,7 +94,7 @@ public class BoardMain extends Application {
 			for (int i = 0; i < currentBoard.length; i++) {
 				for (int j = 0; j < currentBoard[i].length; j++) {
 					// Erstellen eines Rechtecks für jede Zelle
-					Rectangle cell = new Rectangle(50, 50);
+					Rectangle cell = new Rectangle(30, 30);
 					if (currentBoard[i][j] == 'X') {
 						cell.setFill(Color.RED); // Beispiel: 'X' für einen Bot
 					} else {
@@ -108,61 +107,6 @@ public class BoardMain extends Application {
 		}
 
 		return gridPane;
-	}
-
-	/**
-	 * Spielmenü anzeigen.
-	 */
-	private void showGameMenu() {
-		VBox gameMenuBox = new VBox(10);
-		gameMenuBox.setAlignment(Pos.CENTER);
-
-		Button startGameButton = new Button("Spiel starten");
-		Button endGameButton = new Button("Spiel beenden");
-
-		startGameButton.setOnAction(event -> startGame());
-		endGameButton.setOnAction(event -> endGame());
-
-		gameMenuBox.getChildren().addAll(startGameButton, endGameButton);
-		gamefield.getChildren().clear(); // Löscht das Spielfeld
-		gamefield.add(gameMenuBox, 0, 0); // Spielmenü anzeigen
-	}
-
-	/**
-	 * Spiel starten.
-	 */
-	private void startGame() {
-		statusLabel.setText("Spiel gestartet");
-		displayBoard();
-	}
-
-	/**
-	 * Spiel beenden.
-	 */
-	private void endGame() {
-		statusLabel.setText("Spiel beendet");
-		gamefield.getChildren().clear(); // Löscht das Spielfeld
-	}
-
-	/**
-	 * Spielfeld visualisieren.
-	 */
-	private void displayBoard() {
-		gamefield.getChildren().clear(); // Leert das Spielfeld, bevor es neu angezeigt wird
-		char[][] currentBoard = boardModel.getBoard();
-		if (currentBoard != null) {
-			for (int i = 0; i < currentBoard.length; i++) {
-				for (int j = 0; j < currentBoard[i].length; j++) {
-					Rectangle cell = new Rectangle(50, 50);
-					if (currentBoard[i][j] == 'X') {
-						cell.setFill(Color.RED); // Beispiel: 'X' für einen Bot
-					} else {
-						cell.setFill(Color.LIGHTGRAY); // Beispiel: leeres Feld
-					}
-					gamefield.add(cell, j, i); // Setzt das Rechteck an die entsprechende Position
-				}
-			}
-		}
 	}
 
 	/**
@@ -201,6 +145,7 @@ public class BoardMain extends Application {
 
 		terminateRace.setOnAction(event -> {
 			// TODO Implement terminate race action
+			Platform.exit();
 		});
 
 		controlBox.getChildren().addAll(speed, playRace, pauseRace, resumeRace, terminateRace);
