@@ -21,11 +21,11 @@ import java.io.IOException;
 
 public class BoardMain extends Application {
 
+	// is used to manage the state of the board. It Provides methods to read the board file and update the state of the board
 	private static BoardModel boardModel;
+	// uses the ActorSystem to create and manage actors. It send messages to the BoardRoot actor to control the game.
 	private ActorSystem<Message> actorSystem;
-	private GridPane gamefield;
 	private ChoiceBox<Integer> speed;
-	private TableView<String> botTable;
 
 	/**
 	 * Initialize the actor system.
@@ -35,23 +35,14 @@ public class BoardMain extends Application {
 		// Initialisiert das BoardModel mit der Dateipfad für das Board
 		String boardChoiceShortcut = "";
 		int boardChoice = 1; // Please choose your board
-		switch(boardChoice) {
-			case 1:
-				boardChoiceShortcut = "board1.txt";
-				break;
-			case 2:
-				boardChoiceShortcut = "board2.txt";
-				break;
-			case 3:
-				boardChoiceShortcut = "board3.txt";
-				break;
-			case 4:
-				boardChoiceShortcut = "board4.txt";
-				break;
-			case 5:
-				boardChoiceShortcut = "board5.txt";
-				break;
-		}
+		boardChoiceShortcut = switch (boardChoice) {
+			case 1 -> "board1.txt";
+			case 2 -> "board2.txt";
+			case 3 -> "board3.txt";
+			case 4 -> "board4.txt";
+			case 5 -> "board5.txt";
+			default -> "board1.txt";
+		};
 		boardModel = new BoardModel("/home/tim/Documents/BFH/SpecialWeek/SpecialWeek_2/java-06/board/src/main/resources/ch/bfh/akka/botrace/board/model/" + boardChoiceShortcut);
 		actorSystem = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
 	}
@@ -68,7 +59,7 @@ public class BoardMain extends Application {
 		// Oberer Bereich: Status-Label
 		VBox topBox = new VBox(10);
 		topBox.setAlignment(Pos.CENTER);
-		botTable = createBotTable();
+		TableView<String> botTable = createBotTable();
 		topBox.getChildren().add(botTable);
 
 		// Unterer Bereich: Steuerungsbuttons
@@ -76,7 +67,7 @@ public class BoardMain extends Application {
 		root.setBottom(controlButtons);
 
 		// Zentraler Bereich: Spielfeld
-		gamefield = createGameField();
+		GridPane gamefield = createGameField();
 		root.setCenter(gamefield);
 
 		// Das Layout dem Hauptfenster hinzufügen
@@ -165,7 +156,7 @@ public class BoardMain extends Application {
 	private HBox createControlButtons() {
 		HBox controlBox = new HBox(10);
 
-		speed = new ChoiceBox();
+		speed = new ChoiceBox<>();
 		speed.getItems().addAll(200, 500, 2000, 5000);
 		speed.setValue(200); // Default value
 
