@@ -4,42 +4,58 @@
 package ch.bfh.akka.botrace.board.gui;
 
 import javafx.application.Application;
+import javafx.fxml.FXML;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class BoardMain extends Application {
 
-    /**
-     * Initialize the actor system.
-     */
-    @Override
-    public void init() {
-        // TODO Initialize the board actor system, keep a reference to it.
-    }
+	@FXML
+	private VBox botList;
+	@FXML
+	private ChoiceBox<Integer> speed;
+	@FXML
+	private Button start;
+	@FXML
+	private Button stop;
+	@FXML
+	private GridPane gamefield;
 
-    /**
-     * Constructs the GUI and shows it to the user.
-     * @param primaryStage the primary stage for this application.
-     */
-    @Override
-    public void start(Stage primaryStage) {
-        // TODO Replace the following by a 'real' GUI
-        Label label = new Label("Hello Akka programmer, please complete the GUI for the board");
-        StackPane pane = new StackPane(label);
-        Scene scene = new Scene(pane, 500, 200);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Board of Group xyz");
-        primaryStage.show();
-    }
+	/**
+	 * Initialize the actor system.
+	 */
+	@Override
+	public void init() {
+		// TODO Initialize the board actor system, keep a reference to it.
+	}
 
-    @Override
-    public void stop() {
-        // TODO Terminate actor system
-    }
+	/**
+	 * Constructs the GUI and shows it to the user.
+	 * @param primaryStage the primary stage for this application.
+	 */
+	@Override
+	public void start(Stage primaryStage) {
+		// TODO Replace the following by a 'real' GUI
+		Label label = new Label("Hello Akka programmer, please complete the GUI for the board");
+		StackPane pane = new StackPane(label);
+		Scene scene = new Scene(pane, 500, 200);
+		primaryStage.setScene(scene);
+		primaryStage.setTitle("Board of Group xyz");
+		primaryStage.show();
+	}
 
-    public static void main(String[] args) {
-        Application.launch(args);
-    }
+	@Override
+	public void stop() {
+		// TODO Terminate actor system
+	}
+
+	public static void main(String[] args) {
+		Application.launch(args);
+	}
 }

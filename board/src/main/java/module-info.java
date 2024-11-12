@@ -22,6 +22,7 @@ module ch.bfh.akka.actorrace.board {
 
 	requires ch.bfh.akka.botrace.common;
 	requires transitive javafx.controls;
+	requires javafx.fxml;
 	// requires javafx.graphics; // perhaps necessary
 
 	// Exporting all (relevant) packages doesn't prevent the
