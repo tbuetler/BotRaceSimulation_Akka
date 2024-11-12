@@ -163,7 +163,25 @@ public class BoardModel implements Board {
         }
     }
 
-    private String displayBoard(){
+
+    public void deregister(ActorRef<Message> botRef) {
+        playerPosition.remove(botRef);
+        playerName.remove(botRef);
+    }
+
+
+    public int getDistanceToTarget(ActorRef<Message> botRef) {
+
+        Position pos = playerPosition.get(botRef);
+
+        int diffRows = Math.abs(pos.row - end.row);
+        int diffCols = Math.abs(pos.col - end.col);
+
+        return diffRows + diffCols;
+    }
+
+
+    public String displayBoard(){
 
         char[][] boardCopy = new char[board.length][];
         for (int i = 0; i < board.length; i++) {
