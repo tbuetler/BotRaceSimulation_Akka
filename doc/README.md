@@ -15,3 +15,5 @@ In this section all the documentation are stored
 ## UML
 
 > **Note:** The UML diagram is in progress**
+
+![Classdiagram](../img/classdiagram_V1.png)
