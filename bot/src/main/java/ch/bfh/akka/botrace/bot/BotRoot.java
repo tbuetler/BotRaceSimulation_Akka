@@ -71,9 +71,26 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
             case DeregisterMessage deregisterMessage                                   -> onDeregister(deregisterMessage);
             case ChosenDirectionMessage chosenDirectionMessage                         -> onChosenDirection(chosenDirectionMessage);
             case AvailableDirectionsRequestMessage availableDirectionsRequestMessage   -> onAvailableDirectionsRequest(availableDirectionsRequestMessage);
+            case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
+            case RegisterMessage registerMessage                                       -> onRegister(registerMessage);
 
             default -> throw new IllegalStateException("Unexpected value: " + message);
         };
+    }
+
+    private Behavior<Message> onListingResponse(ListingResponse message) {
+        getContext().getLog().info("Received listing response: {}", message.listing().getServiceInstances(serviceKeyForBoard));
+        return this;
+    }
+
+
+    private Behavior<Message> onRegister(RegisterMessage message) {
+        getContext().getLog().info("Bot registered: {}", message.name());
+
+        // registration logic..
+
+
+        return this;
     }
 
     private Behavior<Message> onPingResponse(PingResponseMessage message) {

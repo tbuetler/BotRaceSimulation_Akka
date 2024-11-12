@@ -35,7 +35,7 @@ public class BotMain {
 			context.spawn(BotRoot.create("CompetitorBot"), "CompetitorBot");
 
 			// For the competition, only one bot actor will be allowed
-			context.spawn(BotRoot.create("aName..."), "aBot");
+			//context.spawn(BotRoot.create("aName..."), "aBot");
 
 			return Behaviors.empty();
 		});
