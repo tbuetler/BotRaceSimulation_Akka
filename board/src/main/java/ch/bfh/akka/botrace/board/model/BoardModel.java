@@ -3,7 +3,6 @@
  */
 package ch.bfh.akka.botrace.board.model;
 
-import akka.actor.Actor;
 import akka.actor.typed.ActorRef;
 import ch.bfh.akka.botrace.board.actor.Board;
 import ch.bfh.akka.botrace.common.Direction;
@@ -55,37 +54,34 @@ public class BoardModel implements Board {
 
     // Load board from file into 2D array
     private void loadBoard(String filePath) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(filePath));
-        String line;
-        int row = 0;
+        List<String> rows = new ArrayList<>();
 
-        while ((line = br.readLine()) != null) {
-            if (board == null) {
-                rows = line.length() / 2;
-                cols = rows;
-                board = new char[rows][cols];
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String row;
+            while ((row = br.readLine()) != null) {
+                rows.add(row.replaceAll(" ", "")); //
             }
-            for (int col = 0; col < line.length(); col += 2) {
-                board[row][col / 2] = line.charAt(col);
-            }
-            row++;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        br.close();
 
-        //saving start and end
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (board[i][j] == 'S') {
-                    this.start = new Position(i, j);
-                } else if (board[i][j] == 'E') {
-                    this.end = new Position(i, j);
-                }
+        this.rows = rows.size();
+        this.cols = rows.get(0).length();
+
+        // Erstellen des 2D-Arrays
+        this.board = new char[this.rows][this.cols];
+
+        // Befüllen des Arrays
+        for (int i = 0; i < this.rows; i++) {
+            for (int j = 0; j < this.cols; j++) {
+                board[i][j] = rows.get(i).charAt(j);
             }
         }
     }
 
     @Override
     public void registerNewBot(String name, ActorRef<Message> botRef) {
+        //Todo: does register need to send a message back to bot?
         playerName.put(botRef, name);
         playerPosition.put(botRef, start);
     }
@@ -93,12 +89,33 @@ public class BoardModel implements Board {
     @Override
     public boolean playChosenDirection(Direction direction, ActorRef<Message> botRef) {
 
+        //checks if move valid
+        if(isMoveValid(botRef, direction)) {
+            Position pos = playerPosition.get(botRef);
+
+            int[] offset = DIRECTIONS[direction.ordinal()];
+            int newRow = pos.row + offset[0];
+            int newCol = pos.col + offset[1];
+
+            playerPosition.put(botRef, new Position(newRow, newCol));
+            return true;
+        }
+
+        //move not valid
         return false;
     }
 
     @Override
     public List<Direction> getAvailableDirection(ActorRef<Message> botRef) {
+
         List<Direction> directions = new ArrayList<>();
+
+        //checks each direction if possible
+        for(Direction direction : Direction.values()) {
+            if(isMoveValid(botRef, direction)) {
+                directions.add(direction);
+            }
+        }
 
         return directions;
     }
@@ -116,20 +133,20 @@ public class BoardModel implements Board {
 
     @Override
     public boolean isMoveValid(ActorRef<Message> botRef, Direction direction){
+
         // no check needed for no move
         if(direction == Direction.X){
             return true;
         }
 
         Position pos = playerPosition.get(botRef);
+        int[] offset = DIRECTIONS[direction.ordinal()]; // Get the direction offset
 
-        switch(direction) {
+        int newRow = pos.row + offset[0];
+        int newCol = pos.col + offset[1];
 
-        }
-
-
-
-        return false;
+        // Check if the new position is within the bounds of the board
+        return newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols;
     }
 
 
@@ -148,6 +165,4 @@ public class BoardModel implements Board {
             return row;
         }
     }
-
-
 }
