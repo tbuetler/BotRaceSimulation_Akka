@@ -146,6 +146,9 @@ public class BoardModel implements Board {
         return newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols;
     }
 
+    public char[][] getBoard() {
+        return board;
+    }
 
     // Inner class for position
     private static class Position {
