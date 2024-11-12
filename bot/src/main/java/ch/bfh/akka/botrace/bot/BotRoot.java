@@ -60,7 +60,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private ActorRef<Message> boardRef;
-    private String actorName = getContext().getSelf().path().name();
+    private final String actorName = getContext().getSelf().path().name();
 
     /**
      * Handle incoming messages.
