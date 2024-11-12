@@ -3,131 +3,158 @@
  */
 package ch.bfh.akka.botrace.board.gui;
 
-import akka.actor.ActorSystem;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
-
-import java.io.IOException;
 
 public class BoardMain extends Application {
 
-	@FXML
-	private VBox botList;
-	@FXML
-	private ChoiceBox<Integer> speed;
-	@FXML
-	private Button start;
-	@FXML
-	private Button stop;
-	@FXML
-	private GridPane gamefield;
+	// Deklariert die Hauptkomponenten der GUI
+	private TableView<String> botTable; // Tabelle für die Bot-Informationen
+	private ChoiceBox<Integer> speed; // Wahlbox zur Auswahl der Geschwindigkeit
+	private Button setupRace, playRace, pauseRace, resumeRace, terminateRace; // Steuerungsbuttons
+	private GridPane gamefield; // Spielbereich als Raster für Bots und Hindernisse
 
-	/**
-	 * Initialize the actor system.
-	 */
 	@Override
-	public void init() {
-		// TODO Initialize the board actor system, keep a reference to it.
-	}
-
-	/**
-	 * Constructs the GUI and shows it to the user.
-	 * @param primaryStage the primary stage for this application.
-	 */
-	@Override
-	public void start(Stage primaryStage) throws IOException {
-		// TODO Replace the following by a 'real' GUI
-		//Label label = new Label("Hello Akka programmer, please complete the GUI for the board");
-
-		// Create the root layout
+	public void start(Stage primaryStage) {
+		// Erzeugt ein BorderPane als Hauptlayout
 		BorderPane root = new BorderPane();
 
-		// Create the VBox for bot list and controls
-		botList = new VBox();
-		botList.setPrefHeight(91.0);
-		botList.setPrefWidth(600.0);
+		// Oberer Bereich - Bot-Tabelle
+		botTable = createBotTable();
+		root.setTop(botTable);
 
-		// Create a ChoiceBox for speed
-		speed = new ChoiceBox<>();
-		speed.getItems().addAll(200, 500, 2000, 5000);
-		speed.setValue(speed.getItems().getFirst());
-		speed.setPrefWidth(150.0);
+		// Unterer Bereich - Steuerungsbuttons
+		HBox controlButtons = createControlButtons();
+		root.setBottom(controlButtons);
 
-		// Create Start and Stop buttons
-		start = new Button("Start");
-		start.setOnAction(event -> startRace());
-
-		stop = new Button("Stop");
-		stop.setOnAction(event -> stopRace());
-
-		// Add the ChoiceBox and buttons to the left side (VBox)
-		VBox leftPanel = new VBox(speed, start, stop);
-		leftPanel.setPrefWidth(100.0);
-
-		// Create the game field (GridPane)
-		gamefield = new GridPane();
-		gamefield.setPrefWidth(400.0);
-		gamefield.setPrefHeight(200.0);
-
-		// Configure grid column constraints
-		ColumnConstraints col1 = new ColumnConstraints();
-		col1.setHgrow(javafx.scene.layout.Priority.SOMETIMES);
-		col1.setMinWidth(10.0);
-		col1.setPrefWidth(100.0);
-
-		ColumnConstraints col2 = new ColumnConstraints();
-		col2.setHgrow(javafx.scene.layout.Priority.SOMETIMES);
-		col2.setMinWidth(10.0);
-		col2.setPrefWidth(100.0);
-
-		gamefield.getColumnConstraints().addAll(col1, col2);
-
-		// Configure grid row constraints
-		RowConstraints row1 = new RowConstraints();
-		row1.setVgrow(javafx.scene.layout.Priority.SOMETIMES);
-		row1.setMinHeight(10.0);
-		row1.setPrefHeight(30.0);
-
-		RowConstraints row2 = new RowConstraints();
-		row2.setVgrow(javafx.scene.layout.Priority.SOMETIMES);
-		row2.setMinHeight(10.0);
-		row2.setPrefHeight(30.0);
-
-		gamefield.getRowConstraints().addAll(row1, row2);
-
-		// Set the components into the BorderPane layout
-		root.setTop(botList);
-		root.setLeft(leftPanel);
+		// Zentraler Bereich - Spielfeld
+		gamefield = createGameField();
 		root.setCenter(gamefield);
 
-		// set up the GUI
-		Scene scene = new Scene(root, 500, 200);
+		// Initialisiert die Szene und zeigt sie an
+		Scene scene = new Scene(root, 800, 600);
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Board of Group 06");
 		primaryStage.show();
 	}
 
+	/**
+	 * Erzeugt die Tabelle für die Anzeige der Bot-Informationen.
+	 * @return Eine TableView mit Spalten für Bot-Name, Actor-Referenz, Position, Distanz und Ping-Status.
+	 */
+	private TableView<String> createBotTable() {
+		TableView<String> table = new TableView<>();
+		table.setPrefHeight(150); // Setzt die Höhe der Tabelle
+
+		// Erzeugt und konfiguriert die einzelnen Spalten
+		TableColumn<String, String> botNameCol = new TableColumn<>("Bot Name");
+		botNameCol.setPrefWidth(100);
+
+		TableColumn<String, String> actorRefCol = new TableColumn<>("Actor Ref");
+		actorRefCol.setPrefWidth(250);
+
+		TableColumn<String, String> posCol = new TableColumn<>("Pos");
+		posCol.setPrefWidth(100);
+
+		TableColumn<String, String> distCol = new TableColumn<>("Dist");
+		distCol.setPrefWidth(75);
+
+		TableColumn<String, String> pingCol = new TableColumn<>("Ping Status");
+		pingCol.setPrefWidth(75);
+
+		// Fügt die Spalten zur Tabelle hinzu
+		table.getColumns().addAll(botNameCol, actorRefCol, posCol, distCol, pingCol);
+		return table;
+	}
+
+	/**
+	 * Erstellt eine HBox mit Steuerungsbuttons für das Rennen.
+	 * @return Eine HBox mit Buttons zum Steuern des Rennens.
+	 */
+	private HBox createControlButtons() {
+		HBox controlBox = new HBox(10); // HBox mit 10 Pixeln Abstand zwischen den Buttons
+
+		// Erzeugt die Steuerungsbuttons und fügt sie zur HBox hinzu
+		setupRace = new Button("Setup Race");
+		playRace = new Button("Play Race");
+		pauseRace = new Button("Pause Race");
+		resumeRace = new Button("Resume Race");
+		terminateRace = new Button("Terminate Race");
+
+		controlBox.getChildren().addAll(setupRace, playRace, pauseRace, resumeRace, terminateRace);
+		controlBox.setAlignment(Pos.CENTER); // Zentriert die Buttons
+		controlBox.setPrefHeight(50); // Setzt die Höhe des Steuerungsbereichs
+
+		return controlBox;
+	}
+
+	/**
+	 * Erstellt das Spielfeld als Raster für Bots und Hindernisse.
+	 * @return Ein GridPane, das das Spielfeld repräsentiert.
+	 */
+	private GridPane createGameField() {
+		GridPane grid = new GridPane();
+		grid.setPrefSize(600, 400); // Setzt die Größe des Spielfeldes
+		grid.setStyle("-fx-background-color: white;"); // Setzt den Hintergrund auf weiß
+
+		// Fügt Wände (graue Rechtecke) hinzu
+		for (int i = 1; i < 4; i++) {
+			for (int j = 1; j < 3; j++) {
+				Pane wall = new Pane();
+				wall.setStyle("-fx-background-color: gray;"); // Graue Farbe für die Wände
+				wall.setPrefSize(60, 60); // Setzt die Größe der Wände
+				grid.add(wall, i, j); // Fügt die Wand an eine Position im Raster hinzu
+			}
+		}
+
+		// TODO: Hier können die Bots hinzugefügt werden. Diese dienen nur als Beispiel
+		// Fügt Bots (farbige Kreise) an verschiedene Positionen hinzu
+		Circle bot1 = createBotCircle(Color.BLUE, "Bot 1");
+		Circle bot2 = createBotCircle(Color.RED, "Bot 2");
+		Circle bot3 = createBotCircle(Color.GREEN, "Bot 3");
+		Circle bot4 = createBotCircle(Color.YELLOW, "Bot 4");
+
+		grid.add(bot1, 2, 5); // Positioniert Bot 1 im Raster
+		grid.add(bot2, 3, 3); // Positioniert Bot 2 im Raster
+		grid.add(bot3, 5, 2); // Positioniert Bot 3 im Raster
+		grid.add(bot4, 6, 4); // Positioniert Bot 4 im Raster
+
+		return grid;
+	}
+
+	/**
+	 * Erzeugt einen farbigen Kreis für einen Bot.
+	 * @param color Die Farbe des Kreises (Bots).
+	 * @param botName Der Name des Bots für die Identifikation.
+	 * @return Ein Kreis, der den Bot repräsentiert.
+	 */
+	private Circle createBotCircle(Color color, String botName) {
+		Circle bot = new Circle(20, color); // Erzeugt einen Kreis mit 20 Pixeln Radius und der angegebenen Farbe
+		bot.setUserData(botName); // Speichert den Namen des Bots in den User-Daten
+		Tooltip.install(bot, new Tooltip(botName)); // Tooltip zeigt den Namen des Bots an, wenn man über den Kreis fährt
+		return bot;
+	}
+
+	/**
+	 * Beendet die Anwendung und schließt die Plattform.
+	 */
 	@Override
 	public void stop() {
-		// TODO Terminate actor system
-		Platform.exit();
+		Platform.exit(); // Schließt die JavaFX-Anwendung
 	}
 
+	/**
+	 * Hauptmethode zum Starten der Anwendung.
+	 * @param args Standard-Argumente für die Main-Methode
+	 */
 	public static void main(String[] args) {
-		Application.launch(args);
-	}
-
-	public void startRace() {
-		System.out.println("Race started.\nSpeed: " + speed.getValue());
-	}
-
-	public void stopRace() {
-		System.out.println("Race stopped.");
+		launch(args); // Startet die JavaFX-Anwendung
 	}
 }
