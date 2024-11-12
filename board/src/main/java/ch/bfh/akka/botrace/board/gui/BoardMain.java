@@ -106,6 +106,16 @@ public class BoardMain extends Application {
 		resumeRace = new Button("Resume Race");
 		terminateRace = new Button("Terminate Race");
 
+		speed = new ChoiceBox<>();
+		speed.getItems().addAll(200, 500, 2000, 5000); //  speed optionen
+		speed.setValue(200); // Standardwert
+
+		speed.setOnAction(event -> {
+			Integer selectedSpeed = speed.getValue();
+			System.out.println("Selected speed: " + selectedSpeed);
+			// TODO Implement the speed change action
+		});
+
 		setupRace.setOnAction(event -> {
 			// TODO Implement the setup race action
 		});
@@ -126,7 +136,7 @@ public class BoardMain extends Application {
 			stop();
 		});
 
-		controlBox.getChildren().addAll(setupRace, playRace, pauseRace, resumeRace, terminateRace);
+		controlBox.getChildren().addAll(setupRace, playRace, pauseRace, resumeRace, terminateRace, speed);
 		controlBox.setAlignment(Pos.CENTER); // Zentriert die Buttons
 		controlBox.setPrefHeight(50); // Setzt die Höhe des Steuerungsbereichs
 
