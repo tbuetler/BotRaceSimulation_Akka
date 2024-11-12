@@ -11,6 +11,10 @@ import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.common.BoardService;
 import ch.bfh.akka.botrace.common.Message;
+import ch.bfh.akka.botrace.common.botmessage.AvailableDirectionsRequestMessage;
+import ch.bfh.akka.botrace.common.botmessage.ChosenDirectionMessage;
+import ch.bfh.akka.botrace.common.botmessage.DeregisterMessage;
+import ch.bfh.akka.botrace.common.botmessage.RegisterMessage;
 
 /**
  * The root actor of the Board actor system. It registers itself at the {@link Receptionist}
@@ -56,7 +60,44 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 	 */
 	@Override
 	public Behavior<Message> onMessage(Message message) {
-		// TODO Complete
+
+		switch (message){
+			case DeregisterMessage deregisterMessage 									-> onDeregisterMessage(deregisterMessage);
+			case RegisterMessage registerMessage 										-> onRegisterMessage(registerMessage);
+			case AvailableDirectionsRequestMessage availableDirectionsRequestMessage 	-> onAvailableDirectionsRequestMessage(availableDirectionsRequestMessage);
+			case ChosenDirectionMessage chosenDirectionMessage 							-> onChosenDirectionMessage(chosenDirectionMessage);
+
+            default -> throw new IllegalStateException("Message not handled: " + message);
+        };
+
 		return Behaviors.same();
+	}
+
+	Behavior<Message> onDeregisterMessage(DeregisterMessage deregisterMessage) {
+		getContext().getLog().info("Deregistering because: {}", deregisterMessage.reason());
+
+		//Todo Implement handling
+		return this;
+	}
+
+	Behavior<Message> onRegisterMessage(RegisterMessage registerMessage) {
+		getContext().getLog().info("Registering: {}", registerMessage.name());
+
+		//Todo Implement handling
+		return this;
+	}
+
+	Behavior<Message> onAvailableDirectionsRequestMessage(AvailableDirectionsRequestMessage availableDirectionsRequestMessage) {
+		getContext().getLog().info("Requesting available directions");
+
+		//Todo Implement handling
+		return this;
+	}
+
+	Behavior<Message> onChosenDirectionMessage(ChosenDirectionMessage chosenDirectionMessage) {
+		getContext().getLog().info("Choosing direction: {}", chosenDirectionMessage.chosenDirection());
+
+		//Todo Implement handling
+		return this;
 	}
 }

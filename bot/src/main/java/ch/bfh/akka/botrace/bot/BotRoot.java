@@ -65,19 +65,15 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
      */
     @Override
     public Behavior<Message> onMessage(Message message) {
-        if (message instanceof PingResponseMessage) { // catch the ping response
-            return onPingResponse((PingResponseMessage) message);
-        } else if (message instanceof DeregisterMessage) { // catch the deregister message
-            return onDeregister((DeregisterMessage) message);
-        } else if (message instanceof ChosenDirectionMessage) { // catch the chosen direction message
-            return onChosenDirection((ChosenDirectionMessage) message);
-        } else if (message instanceof AvailableDirectionsRequestMessage) { // catch the available directions request message
-            return onAvailableDirectionsRequest((AvailableDirectionsRequestMessage) message);
-        } else {
-            // if the message is unknown
-            getContext().getLog().info("Received unknown message");
-            return this;
-        }
+
+        return switch(message){
+            case PingResponseMessage pingResponse                                      -> onPingResponse(pingResponse);
+            case DeregisterMessage deregisterMessage                                   -> onDeregister(deregisterMessage);
+            case ChosenDirectionMessage chosenDirectionMessage                         -> onChosenDirection(chosenDirectionMessage);
+            case AvailableDirectionsRequestMessage availableDirectionsRequestMessage   -> onAvailableDirectionsRequest(availableDirectionsRequestMessage);
+
+            default -> throw new IllegalStateException("Unexpected value: " + message);
+        };
     }
 
     private Behavior<Message> onPingResponse(PingResponseMessage message) {
