@@ -21,6 +21,7 @@ public class BoardMain extends Application {
 	private ActorSystem<Message> actorSystem;
 	private GridPane gamefield; // Spielfeld
 	private ChoiceBox<Integer> speed;
+	private TableView<String> botTable;
 
 	/**
 	 * Initialize the actor system.
@@ -33,15 +34,19 @@ public class BoardMain extends Application {
 		switch(boardChoice) {
 			case 1:
 				boardChoiceShortcut = "board1.txt";
+				break;
 			case 2:
 				boardChoiceShortcut = "board2.txt";
+				break;
 			case 3:
 				boardChoiceShortcut = "board3.txt";
+				break;
 			case 4:
 				boardChoiceShortcut = "board4.txt";
+				break;
 			case 5:
 				boardChoiceShortcut = "board5.txt";
-
+				break;
 		}
 		boardModel = new BoardModel("/home/tim/Documents/BFH/SpecialWeek/SpecialWeek_2/java-06/board/src/main/resources/ch/bfh/akka/botrace/board/model/" + boardChoiceShortcut);
 		actorSystem = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
@@ -60,6 +65,9 @@ public class BoardMain extends Application {
 		VBox topBox = new VBox(10);
 		topBox.setAlignment(Pos.CENTER);
 
+		botTable = createBotTable();
+		topBox.getChildren().add(botTable);
+
 		// Unterer Bereich: Steuerungsbuttons
 		HBox controlButtons = createControlButtons();
 
@@ -76,6 +84,35 @@ public class BoardMain extends Application {
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("BotRace Board");
 		primaryStage.show();
+	}
+	
+	/**
+	 * Erzeugt die Tabelle für die Anzeige der Bot-Informationen.
+	 * @return Eine TableView mit Spalten für Bot-Name, Actor-Referenz, Position, Distanz und Ping-Status.
+	 */
+	private TableView<String> createBotTable() {
+		TableView<String> table = new TableView<>();
+		table.setPrefHeight(150); // Setzt die Höhe der Tabelle
+
+		// Erzeugt und konfiguriert die einzelnen Spalten
+		TableColumn<String, String> botNameCol = new TableColumn<>("Bot Name");
+		botNameCol.setPrefWidth(100);
+
+		TableColumn<String, String> actorRefCol = new TableColumn<>("Actor Ref");
+		actorRefCol.setPrefWidth(250);
+
+		TableColumn<String, String> posCol = new TableColumn<>("Pos");
+		posCol.setPrefWidth(100);
+
+		TableColumn<String, String> distCol = new TableColumn<>("Dist");
+		distCol.setPrefWidth(75);
+
+		TableColumn<String, String> pingCol = new TableColumn<>("Ping Status");
+		pingCol.setPrefWidth(75);
+
+		// Fügt die Spalten zur Tabelle hinzu
+		table.getColumns().addAll(botNameCol, actorRefCol, posCol, distCol, pingCol);
+		return table;
 	}
 
 	private GridPane createGameField() {
