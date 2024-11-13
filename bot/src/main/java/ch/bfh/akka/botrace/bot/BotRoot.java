@@ -13,7 +13,7 @@ import akka.actor.typed.receptionist.Receptionist.Listing;
 import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.common.BoardService;
 import ch.bfh.akka.botrace.common.Message;
-import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
+import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
 /**
@@ -71,15 +71,63 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     public Behavior<Message> onMessage(Message message) {
 
         return switch(message){
-            case PingMessage ignored -> onPing();
+            case PingMessage ignored                                                   -> onPing();
+            case SetupMessage setupMessage                                             -> onSetup(setupMessage);
+            case StartMessage startMessage                                             -> onStart(startMessage);
+            case AvailableDirectionsReplyMessage availableDirectionsReplyMessage       -> onAvailableDirectionsReply(availableDirectionsReplyMessage);
+            case ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage           -> onChosenDirectionIgnored(chosenDirectionIgnoredMessage);
+            case TargetReachedMessage targetReachedMessage                             -> onTargetReached(targetReachedMessage);
+            case PauseMessage pauseMessage                                             -> onPause(pauseMessage);
+            case ResumeMessage resumeMessage                                           -> onResume(resumeMessage);
             case DeregisterMessage deregisterMessage                                   -> onDeregister(deregisterMessage);
             case ChosenDirectionMessage chosenDirectionMessage                         -> onChosenDirection(chosenDirectionMessage);
             case AvailableDirectionsRequestMessage availableDirectionsRequestMessage   -> onAvailableDirectionsRequest(availableDirectionsRequestMessage);
-            case ListingResponse listingResponse -> onListingResponse(listingResponse);
+            case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
             case RegisterMessage registerMessage                                       -> onRegister(registerMessage);
+            case UnregisteredMessage unregisteredMessage                               -> onUnregister(unregisteredMessage);
 
             default -> throw new IllegalStateException("Unexpected value: " + message);
         };
+    }
+
+    private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage availableDirectionsReplyMessage){
+
+        return this;
+    }
+
+    private Behavior<Message> onSetup(SetupMessage setupMessage){
+
+        return this;
+    }
+
+    private Behavior<Message> onStart(StartMessage startMessage){
+
+        return this;
+    }
+
+    private Behavior<Message> onChosenDirectionIgnored(ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage){
+
+        return this;
+    }
+
+    private Behavior<Message> onTargetReached(TargetReachedMessage targetReachedMessage){
+
+        return this;
+    }
+
+    private Behavior<Message> onPause(PauseMessage pauseMessage){
+
+        return this;
+    }
+
+    private Behavior<Message> onResume(ResumeMessage resumeMessage){
+
+        return this;
+    }
+
+    private Behavior<Message> onUnregister(UnregisteredMessage unregisteredMessage){
+
+        return this;
     }
 
     private Behavior<Message> onListingResponse(ListingResponse listingResponse) {
