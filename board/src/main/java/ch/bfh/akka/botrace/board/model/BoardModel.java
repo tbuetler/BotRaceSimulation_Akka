@@ -28,7 +28,17 @@ public class BoardModel implements Board {
     private Map<ActorRef<Message>, String> playerName = new HashMap<>();
     private List<ActorRef<Message>> bots = new ArrayList<>();
 
+    private List<BoardUpdateListener> listeners = new ArrayList<>(); // define listeners
 
+    public void addBoardUpdateListener(BoardUpdateListener listener) {
+        listeners.add(listener);
+    }
+
+    private void notifyUiListeners() {
+        for (BoardUpdateListener listener : listeners) {
+            listener.boardUpdated();
+        }
+    }
 
     /**
      *
@@ -78,6 +88,8 @@ public class BoardModel implements Board {
         playerName.put(botRef, name);
         playerPosition.put(botRef, start);
         bots.add(botRef);
+
+        notifyUiListeners();  // trigger listener to rerender UI on new bot registration
     }
 
     @Override
@@ -120,6 +132,10 @@ public class BoardModel implements Board {
             }
             Position newPosition = new Position(row,col);
             playerPosition.put(botRef,newPosition);
+
+            notifyUiListeners(); // trigger ui listener on new move played
+
+
             return true;
         }
 

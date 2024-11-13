@@ -93,6 +93,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message){
+        getContext().getLog().info("Received available directions from board {}", message.directions());
         List<Direction> directionList = message.directions();
         int random = new Random().nextInt(directionList.size());
         boardRef.tell(new ChosenDirectionMessage(directionList.get(random), this.botRef));
@@ -101,11 +102,12 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onSetup(SetupMessage setupMessage){
-
+        getContext().getLog().info("Bot {} got setup message", actorName);
         return this;
     }
 
     private Behavior<Message> onStart(){
+        getContext().getLog().info("Bot {} got start message", actorName);
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
@@ -117,6 +119,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onTargetReached(){
+        getContext().getLog().info("Bot reached target");
         boardRef.tell(new DeregisterMessage("Bot reached Target", this.botRef));
         return this;
     }
@@ -127,12 +130,13 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onResume(){
+        getContext().getLog().info("Game was resumed");
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
 
     private Behavior<Message> onUnregister(){
-        getContext().getLog().info("Bot is deregistered ");
+        getContext().getLog().info("Bot {} is deregistered ", actorName);
         return Behaviors.stopped();
     }
 

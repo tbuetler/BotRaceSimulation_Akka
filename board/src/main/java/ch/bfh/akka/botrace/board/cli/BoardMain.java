@@ -10,27 +10,26 @@ import akka.actor.typed.javadsl.Behaviors;
 import ch.bfh.akka.botrace.board.actor.Board;
 import ch.bfh.akka.botrace.board.actor.BoardRoot;
 import ch.bfh.akka.botrace.board.actor.ClusterListener;
+import ch.bfh.akka.botrace.board.model.BoardUpdateListener;
 import ch.bfh.akka.botrace.common.Message;
 import ch.bfh.akka.botrace.board.model.BoardModel;
 import ch.bfh.akka.botrace.common.boardmessage.StartRaceMessage;
 import ch.bfh.akka.botrace.common.boardmessage.PauseMessage;
 import ch.bfh.akka.botrace.common.boardmessage.ResumeMessage;
-import ch.bfh.akka.botrace.common.boardmessage.StartMessage;
 import javafx.application.Platform;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Scanner;
 
-public class BoardMain {
+public class BoardMain implements BoardUpdateListener {
     /**
      * Entry point for the Board actor system.
      *
      * @param args not used
      */
     private static ActorRef<Message> boardRef;
-    //private static ActorSystem<Message> board;
     private static ActorSystem<Void> board;
-    private static boolean loggedIn = false;
     private static Scanner scanner = new Scanner(System.in);
 
     private static BoardModel boardModel;
@@ -40,7 +39,7 @@ public class BoardMain {
 
     public static void main(String[] args) throws IOException {
         String boardChoiceShortcut = "";
-        int boardChoice = 1; // Please choose your board
+        int boardChoice = 1; // Assume this is the board choice logic
         boardChoiceShortcut = switch (boardChoice) {
             case 1 -> "board1.txt";
             case 2 -> "board2.txt";
@@ -49,13 +48,22 @@ public class BoardMain {
             case 5 -> "board5.txt";
             default -> "board1.txt";
         };
-        //boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
-        boardModel = new BoardModel("C:\\Users\\gil\\Git\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\board1.txt");
+
+        URL resourceUrl = BoardMain.class.getResource("/ch/bfh/akka/botrace/board/model/" + boardChoiceShortcut);
+        if (resourceUrl == null) {
+            System.out.println("Resource file not found: " + boardChoiceShortcut);
+            return;
+        }
+
+        String filePath = resourceUrl.getFile();
+        boardModel = new BoardModel(filePath);
+        boardModel.addBoardUpdateListener(new BoardMain()); // register cli board as listener of BoardModel
+
         board = ActorSystem.create(rootBehavior(), "ClusterSystem");
-        //board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
-        board.log().info("Board Actor System created");
+        System.out.println("Board Actor System created");
         runCli(); // display application
     }
+
 
     /**
      * Creates the two actors {@link ClusterListener} and {@link BoardRoot}.
@@ -108,8 +116,6 @@ public class BoardMain {
             switch (choice) {
                 case 1:
                     pause();
-                    System.out.println("Starting the game...");
-                    boardRef.tell(new StartRaceMessage());
                     displayBoard();
                     break;
                 case 2:
@@ -159,19 +165,20 @@ public class BoardMain {
     private static void displayBoard() {
         System.out.println("Current Board:");
         char[][] currentBoard = boardModel.getBoard();
-
         if (currentBoard != null) {
-            StringBuilder boardOutput = new StringBuilder();
             for (int i = 0; i < currentBoard.length; i++) {
                 for (int j = 0; j < currentBoard[i].length; j++) {
-                    boardOutput.append(currentBoard[i][j]).append(" ");
+                    System.out.print(currentBoard[i][j] + " ");
                 }
-                boardOutput.append("\n"); // Neue Zeile am Ende jeder Zeile des Boards
+                System.out.println();
             }
-            System.out.println(boardOutput.toString());
         } else {
             System.out.println("No board data available.");
         }
     }
 
+    @Override
+    public void boardUpdated() {
+        displayBoard();  // Call the display function whenever an update is notified
+    }
 }
