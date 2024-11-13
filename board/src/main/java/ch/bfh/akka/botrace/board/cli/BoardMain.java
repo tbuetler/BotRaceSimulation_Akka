@@ -12,6 +12,10 @@ import ch.bfh.akka.botrace.board.actor.BoardRoot;
 import ch.bfh.akka.botrace.board.actor.ClusterListener;
 import ch.bfh.akka.botrace.common.Message;
 import ch.bfh.akka.botrace.board.model.BoardModel;
+import ch.bfh.akka.botrace.common.boardmessage.PauseMessage;
+import ch.bfh.akka.botrace.common.boardmessage.ResumeMessage;
+import ch.bfh.akka.botrace.common.boardmessage.StartMessage;
+import javafx.application.Platform;
 
 import java.io.IOException;
 import java.util.Scanner;
@@ -21,17 +25,32 @@ public class BoardMain {
      * Entry point for the Board actor system.
      * @param args not used
      */
-    private static ActorSystem<Void> board;
+    private static ActorSystem<Message> board;
+    //private static ActorSystem<Void> board;
     private static boolean loggedIn = false;
     private static Scanner scanner = new Scanner(System.in);
 
     private static BoardModel boardModel;
 
-    public static void main(String[] args) throws IOException {
-        // Create the board Akka system with initial actors.
-        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/board1.txt");
+    private static boolean gameRunning = false;
 
-        board = ActorSystem.create(rootBehavior(), "ClusterSystem");
+
+    public static void main(String[] args) throws IOException {
+        String boardChoiceShortcut = "";
+        int boardChoice = 1; // Please choose your board
+        boardChoiceShortcut = switch (boardChoice) {
+            case 1 -> "board1.txt";
+            case 2 -> "board2.txt";
+            case 3 -> "board3.txt";
+            case 4 -> "board4.txt";
+            case 5 -> "board5.txt";
+            default -> "board1.txt";
+        };
+        // Create the board Akka system with initial actors.
+        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
+
+        board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
+        //board = ActorSystem.create(rootBehavior(), "ClusterSystem");
         board.log().info("Board Actor System created");
         runCli(); // display application
     }
@@ -54,96 +73,83 @@ public class BoardMain {
     }
 
     private static void runCli() {
-        while (true) {
-            if (!loggedIn) {
-                System.out.println("\n[1] Login\n[2] Register\n[3] Exit");
+        boolean running = true;
+        while (running) {
+            if (!gameRunning) {
+                System.out.println("\n[1] Start Game\n[2] Exit");
                 System.out.print("Select an option: ");
                 int choice = scanner.nextInt();
                 switch (choice) {
                     case 1:
-                        login();
+                        startGame();
+                        gameMenu();
                         break;
                     case 2:
-                        register();
-                        break;
-                    case 3:
+                        running = false;
                         System.out.println("Exiting...");
-                        board.terminate();
-                        return;
+                        terminate();
+                        break;
                     default:
-                        System.out.println("Invalid option.. Please try again.");
+                        System.out.println("Invalid option. Please try again.");
                 }
-            } else {
-                gameMenu();
             }
         }
     }
 
-    private static void login() {
-        System.out.print("Enter username: ");
-        String username = scanner.next();
-        loggedIn = true;
-        System.out.println("Logged in as " + username);
-    }
-
-    private static void register() {
-        System.out.print("Register new username: ");
-        String username = scanner.next();
-        loggedIn = true;
-        // logic to register new user
-
-        System.out.println("Registered and logged in as " + username);
-    }
-
     private static void gameMenu() {
-        while (true) {
-            System.out.println("\n[1] Start Game\n[2] End Game\n[3] Logout\n[4] Deregister");
+        gameRunning = true;
+        while (gameRunning) {
+            System.out.println("\n[1] Pause Game\n[2] Resume Game\n[3] End Game");
             System.out.print("Select an option: ");
             int choice = scanner.nextInt();
             switch (choice) {
                 case 1:
-                    System.out.println("Starting the game...");
-                    displayBoard();
+                    pause();
                     break;
                 case 2:
-                    System.out.println("Ending the game...");
-                    return;
+                    resume();
+                    break;
                 case 3:
-                    logout();
-                    return;
-                case 4:
-                    deregister();
-                    return;
+                    endGame();
+                    break;
                 default:
                     System.out.println("Invalid option. Please try again.");
             }
         }
     }
 
+    public static void startGame() {
+        System.out.println("Game started");
+        board.tell(new StartMessage());
+        updateBoard(boardModel.displayBoard());
+    }
 
-    private static void displayBoard() {
-        System.out.println("Current Board:");
-        char[][] currentBoard = boardModel.getBoard();
-        if (currentBoard != null) {
-            for (int i = 0; i < currentBoard.length; i++) {
-                for (int j = 0; j < currentBoard[i].length; j++) {
-                    System.out.print(currentBoard[i][j] + " ");
-                }
-                System.out.println();
-            }
-        } else {
-            System.out.println("No board data available.");
+    private static void pause() {
+        board.tell(new PauseMessage());
+        System.out.println("Game paused");
+    }
+
+    private static void resume() {
+        board.tell(new ResumeMessage());
+        System.out.println("Game resumed");
+    }
+
+    private static void endGame() {
+        System.out.println("Game ended");
+        gameRunning = false;
+        if (board != null) {
+            board.terminate();
+        }
+        Platform.exit();
+    }
+
+    private static void terminate() {
+        if (board != null) {
+            board.terminate();
         }
     }
 
-
-    private static void deregister() {
-        loggedIn = false;
-        System.out.println("Deregistered and logged out.");
-    }
-
-    private static void logout() {
-        loggedIn = false;
-        System.out.println("Logged out.");
+    public static void updateBoard(String boardRepresentation) {
+        System.out.println(boardRepresentation);
     }
 }
