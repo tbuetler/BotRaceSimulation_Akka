@@ -82,11 +82,21 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 			case AvailableDirectionsRequestMessage availableDirectionsRequestMessage 	-> onAvailableDirectionsRequestMessage(availableDirectionsRequestMessage);
 			case ChosenDirectionMessage chosenDirectionMessage 							-> onChosenDirectionMessage(chosenDirectionMessage);
 			case StartRaceMessage startRaceMessage										-> onStartRaceMessage(startRaceMessage);
-
+			case ResumeMessage resumeMessage	-> onResumeMessage(resumeMessage);
             default -> throw new IllegalStateException("Message not handled: " + message);
         };
 
 		return Behaviors.same();
+	}
+
+	private Behavior<Message> onResumeMessage(ResumeMessage resumeMessage) {
+		getContext().getLog().info("Starting race");
+
+		for(ActorRef<Message> ref : boardModel.getBots()){
+			ref.tell(new ResumeMessage());
+		}
+
+		return this;
 	}
 
 	Behavior<Message> onPingResponseMessage(PingResponseMessage pingResponseMessage) {
