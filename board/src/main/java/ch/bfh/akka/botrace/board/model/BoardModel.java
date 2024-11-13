@@ -145,11 +145,12 @@ public class BoardModel implements Board {
 
     @Override
     public boolean checkIfBotFinished(ActorRef<Message> botRef) {
-        if(playerPosition.get(botRef).equals(end)) {
-            return true;
-        }else{
-            return false;
-        }
+         Position botPos = playerPosition.get(botRef);
+         if(botPos.col == this.end.col && botPos.row == this.end.row){
+             return true;
+         }else{
+             return false;
+         }
     }
 
     @Override

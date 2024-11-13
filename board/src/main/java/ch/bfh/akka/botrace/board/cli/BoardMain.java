@@ -49,8 +49,8 @@ public class BoardMain {
             case 5 -> "board5.txt";
             default -> "board1.txt";
         };
-        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
-        //boardModel = new BoardModel("C:\\Users\\gil\\IdeaProjects\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\"+boardChoiceShortcut);
+        //boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
+        boardModel = new BoardModel("C:\\Users\\gil\\IdeaProjects\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\"+boardChoiceShortcut);
         board = ActorSystem.create(rootBehavior(), "ClusterSystem");
         //board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
         board.log().info("Board Actor System created");
@@ -114,6 +114,7 @@ public class BoardMain {
                     break;
                 case 2:
                     resume();
+                    displayBoard();
                     break;
                 case 3:
                     endGame();
@@ -126,7 +127,7 @@ public class BoardMain {
 
     public static void startGame() {
         System.out.println("Game started");
-        boardRef.tell(new StartMessage());
+        boardRef.tell(new StartRaceMessage());
         displayBoard();
     }
 

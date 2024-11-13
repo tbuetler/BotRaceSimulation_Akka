@@ -82,11 +82,23 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 			case AvailableDirectionsRequestMessage availableDirectionsRequestMessage 	-> onAvailableDirectionsRequestMessage(availableDirectionsRequestMessage);
 			case ChosenDirectionMessage chosenDirectionMessage 							-> onChosenDirectionMessage(chosenDirectionMessage);
 			case StartRaceMessage startRaceMessage										-> onStartRaceMessage(startRaceMessage);
+			case PauseMessage pauseMessage 												-> onPauseMessage(pauseMessage);
+
 			case ResumeMessage resumeMessage	-> onResumeMessage(resumeMessage);
             default -> throw new IllegalStateException("Message not handled: " + message);
         };
 
 		return Behaviors.same();
+	}
+
+	private Behavior<Message> onPauseMessage(PauseMessage pauseMessage) {
+		getContext().getLog().info("Pausing Race");
+
+		for(ActorRef<Message> ref : boardModel.getBots()){
+			ref.tell(new PauseMessage());
+		}
+
+		return this;
 	}
 
 	private Behavior<Message> onResumeMessage(ResumeMessage resumeMessage) {
@@ -158,6 +170,7 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 			// if bot finished -> new TargetReachedMessage
 			if(boardModel.checkIfBotFinished(message.botRef())){
 				message.botRef().tell(new TargetReachedMessage());
+				getContext().getLog().info("Target has been reached by: " + boardModel.getPlayerName().get(message.botRef()));
 			}
 		}
 		// Send ChosenDirectionIgnoredMessage if failed to play move
