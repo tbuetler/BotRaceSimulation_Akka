@@ -50,7 +50,7 @@ public class BoardMain {
             default -> "board1.txt";
         };
         //boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
-        boardModel = new BoardModel("C:\\Users\\gil\\IdeaProjects\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\"+boardChoiceShortcut);
+        boardModel = new BoardModel("C:\\Users\\gil\\Git\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\board1.txt");
         board = ActorSystem.create(rootBehavior(), "ClusterSystem");
         //board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
         board.log().info("Board Actor System created");
@@ -159,15 +159,19 @@ public class BoardMain {
     private static void displayBoard() {
         System.out.println("Current Board:");
         char[][] currentBoard = boardModel.getBoard();
+
         if (currentBoard != null) {
+            StringBuilder boardOutput = new StringBuilder();
             for (int i = 0; i < currentBoard.length; i++) {
                 for (int j = 0; j < currentBoard[i].length; j++) {
-                    System.out.print(currentBoard[i][j] + " ");
+                    boardOutput.append(currentBoard[i][j]).append(" ");
                 }
-                System.out.println();
+                boardOutput.append("\n"); // Neue Zeile am Ende jeder Zeile des Boards
             }
+            System.out.println(boardOutput.toString());
         } else {
             System.out.println("No board data available.");
         }
     }
+
 }
