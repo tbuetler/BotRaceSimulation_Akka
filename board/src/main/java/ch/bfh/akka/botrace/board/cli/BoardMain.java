@@ -10,27 +10,25 @@ import akka.actor.typed.javadsl.Behaviors;
 import ch.bfh.akka.botrace.board.actor.Board;
 import ch.bfh.akka.botrace.board.actor.BoardRoot;
 import ch.bfh.akka.botrace.board.actor.ClusterListener;
+import ch.bfh.akka.botrace.board.model.BoardUpdateListener;
 import ch.bfh.akka.botrace.common.Message;
 import ch.bfh.akka.botrace.board.model.BoardModel;
 import ch.bfh.akka.botrace.common.boardmessage.StartRaceMessage;
 import ch.bfh.akka.botrace.common.boardmessage.PauseMessage;
 import ch.bfh.akka.botrace.common.boardmessage.ResumeMessage;
-import ch.bfh.akka.botrace.common.boardmessage.StartMessage;
 import javafx.application.Platform;
 
 import java.io.IOException;
 import java.util.Scanner;
 
-public class BoardMain {
+public class BoardMain implements BoardUpdateListener {
     /**
      * Entry point for the Board actor system.
      *
      * @param args not used
      */
     private static ActorRef<Message> boardRef;
-    //private static ActorSystem<Message> board;
     private static ActorSystem<Void> board;
-    private static boolean loggedIn = false;
     private static Scanner scanner = new Scanner(System.in);
 
     private static BoardModel boardModel;
@@ -49,8 +47,11 @@ public class BoardMain {
             case 5 -> "board5.txt";
             default -> "board1.txt";
         };
-        //boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
-        boardModel = new BoardModel("C:\\Users\\gil\\IdeaProjects\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\"+boardChoiceShortcut);
+        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
+        //boardModel = new BoardModel("C:\\Users\\gil\\IdeaProjects\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\"+boardChoiceShortcut);
+
+        boardModel.addBoardUpdateListener(new BoardMain()); // register cli board as listener of BoardModel
+
         board = ActorSystem.create(rootBehavior(), "ClusterSystem");
         //board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
         board.log().info("Board Actor System created");
@@ -108,8 +109,6 @@ public class BoardMain {
             switch (choice) {
                 case 1:
                     pause();
-                    System.out.println("Starting the game...");
-                    boardRef.tell(new StartRaceMessage());
                     displayBoard();
                     break;
                 case 2:
@@ -169,5 +168,10 @@ public class BoardMain {
         } else {
             System.out.println("No board data available.");
         }
+    }
+
+    @Override
+    public void boardUpdated() {
+        displayBoard();  // Call the display function whenever an update is notified
     }
 }
