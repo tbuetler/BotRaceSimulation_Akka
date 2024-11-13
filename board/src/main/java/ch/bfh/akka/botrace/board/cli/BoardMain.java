@@ -24,6 +24,7 @@ import java.util.Scanner;
 public class BoardMain {
     /**
      * Entry point for the Board actor system.
+     *
      * @param args not used
      */
     private static ActorRef<Message> boardRef;
@@ -59,6 +60,7 @@ public class BoardMain {
 
     /**
      * Creates the two actors {@link ClusterListener} and {@link BoardRoot}.
+     *
      * @return a void behavior
      */
     private static Behavior<Void> rootBehavior() {
@@ -126,7 +128,7 @@ public class BoardMain {
     public static void startGame() {
         System.out.println("Game started");
         board.tell(new StartMessage());
-        updateBoard(boardModel.displayBoard());
+        displayBoard();
     }
 
     private static void pause() {
