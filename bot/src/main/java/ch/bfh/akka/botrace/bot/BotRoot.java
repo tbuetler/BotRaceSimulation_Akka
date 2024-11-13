@@ -12,6 +12,7 @@ import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.Receptionist.Listing;
 import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.common.BoardService;
+import ch.bfh.akka.botrace.common.Direction;
 import ch.bfh.akka.botrace.common.Message;
 import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
@@ -60,8 +61,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         context.getSelf().tell(new RegisterMessage(botName, context.getSelf()));
     }
 
-    private ActorRef<Message> boardRef;
+    private ActorRef<Message> boardRef ;
     private final String actorName = getContext().getSelf().path().name();
+    private final ActorRef<Message> botRef = getContext().getSelf();
 
     /**
      * Handle incoming messages.
@@ -77,22 +79,26 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
             case StartMessage startMessage                                             -> onStart(startMessage);
             case AvailableDirectionsReplyMessage availableDirectionsReplyMessage       -> onAvailableDirectionsReply(availableDirectionsReplyMessage);
             case ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage           -> onChosenDirectionIgnored(chosenDirectionIgnoredMessage);
-            case TargetReachedMessage targetReachedMessage                             -> onTargetReached(targetReachedMessage);
-            case PauseMessage pauseMessage                                             -> onPause(pauseMessage);
-            case ResumeMessage resumeMessage                                           -> onResume(resumeMessage);
+            case TargetReachedMessage ignored                                          -> onTargetReached();
+            case PauseMessage ignored                                                  -> onPause();
+            case ResumeMessage ignored                                                 -> onResume();
             case DeregisterMessage deregisterMessage                                   -> onDeregister(deregisterMessage);
             case ChosenDirectionMessage chosenDirectionMessage                         -> onChosenDirection(chosenDirectionMessage);
-            case AvailableDirectionsRequestMessage availableDirectionsRequestMessage   -> onAvailableDirectionsRequest(availableDirectionsRequestMessage);
             case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
             case RegisterMessage registerMessage                                       -> onRegister(registerMessage);
             case UnregisteredMessage unregisteredMessage                               -> onUnregister(unregisteredMessage);
+            case UnexpectedMessage unexpectedMessage                                   -> onUnexpectedMessage(unexpectedMessage);
 
             default -> throw new IllegalStateException("Unexpected value: " + message);
         };
     }
 
     private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage availableDirectionsReplyMessage){
+        //Algorithm probably here
+        //The availableDirectionsReplyMessage contains the infos like distance etc.
 
+        //only sample
+        boardRef.tell(new ChosenDirectionMessage(Direction.E, botRef));
         return this;
     }
 
@@ -111,17 +117,17 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return this;
     }
 
-    private Behavior<Message> onTargetReached(TargetReachedMessage targetReachedMessage){
-
+    private Behavior<Message> onTargetReached(){
+        getContext().getLog().info("Target reached");
         return this;
     }
 
-    private Behavior<Message> onPause(PauseMessage pauseMessage){
-
+    private Behavior<Message> onPause(){
+        getContext().getLog().info("The game was paused");
         return this;
     }
 
-    private Behavior<Message> onResume(ResumeMessage resumeMessage){
+    private Behavior<Message> onResume(){
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
@@ -162,8 +168,8 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return this;
     }
 
-    private Behavior<Message> onAvailableDirectionsRequest(AvailableDirectionsRequestMessage message) {
-        getContext().getLog().info("Requesting available directions");
+    private Behavior<Message> onUnexpectedMessage(UnexpectedMessage unexpectedMessage) {
+        getContext().getLog().error(unexpectedMessage.description());
         return this;
     }
 
