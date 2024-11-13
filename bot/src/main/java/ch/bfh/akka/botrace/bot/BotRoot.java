@@ -18,10 +18,14 @@ import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
+import java.util.List;
+import java.util.Random;
+
 /**
  * The root actor of the Bot actor system.
  */
 public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian actor
+    Random random = new Random();
 
     /**
      * The service key instance to lookup for the service name {@link BoardService#SERVICE_NAME} of the board.
@@ -58,10 +62,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         context.getSystem().receptionist().tell(Receptionist.subscribe(serviceKeyForBoard, listingResponseAdapter));
         // TODO continue initialization, if necessary...
 
-        context.getSelf().tell(new RegisterMessage(botName, context.getSelf()));
     }
 
-    private ActorRef<Message> boardRef ;
+    private ActorRef<Message> boardRef;
     private final String actorName = getContext().getSelf().path().name();
     private final ActorRef<Message> botRef = getContext().getSelf();
 
@@ -79,26 +82,21 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
             case StartMessage startMessage                                             -> onStart(startMessage);
             case AvailableDirectionsReplyMessage availableDirectionsReplyMessage       -> onAvailableDirectionsReply(availableDirectionsReplyMessage);
             case ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage           -> onChosenDirectionIgnored(chosenDirectionIgnoredMessage);
-            case TargetReachedMessage ignored                                          -> onTargetReached();
-            case PauseMessage ignored                                                  -> onPause();
-            case ResumeMessage ignored                                                 -> onResume();
-            case DeregisterMessage deregisterMessage                                   -> onDeregister(deregisterMessage);
-            case ChosenDirectionMessage chosenDirectionMessage                         -> onChosenDirection(chosenDirectionMessage);
+            case TargetReachedMessage targetReachedMessage                             -> onTargetReached(targetReachedMessage);
+            case PauseMessage pauseMessage                                             -> onPause(pauseMessage);
+            case ResumeMessage resumeMessage                                           -> onResume(resumeMessage);
             case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
-            case RegisterMessage registerMessage                                       -> onRegister(registerMessage);
             case UnregisteredMessage unregisteredMessage                               -> onUnregister(unregisteredMessage);
-            case UnexpectedMessage unexpectedMessage                                   -> onUnexpectedMessage(unexpectedMessage);
 
             default -> throw new IllegalStateException("Unexpected value: " + message);
         };
     }
 
-    private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage availableDirectionsReplyMessage){
-        //Algorithm probably here
-        //The availableDirectionsReplyMessage contains the infos like distance etc.
+    private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message){
+        List<Direction> directionList = message.directions();
+        int random = new Random().nextInt(directionList.size());
+        boardRef.tell(new ChosenDirectionMessage(directionList.get(random), this.botRef));
 
-        //only sample
-        boardRef.tell(new ChosenDirectionMessage(Direction.E, botRef));
         return this;
     }
 
@@ -117,30 +115,31 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return this;
     }
 
-    private Behavior<Message> onTargetReached(){
-        getContext().getLog().info("Target reached");
+    private Behavior<Message> onTargetReached(TargetReachedMessage targetReachedMessage){
+
         return this;
     }
 
-    private Behavior<Message> onPause(){
-        getContext().getLog().info("The game was paused");
+    private Behavior<Message> onPause(PauseMessage pauseMessage){
+
         return this;
     }
 
-    private Behavior<Message> onResume(){
+    private Behavior<Message> onResume(ResumeMessage resumeMessage){
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
 
     private Behavior<Message> onUnregister(UnregisteredMessage unregisteredMessage){
-
-        return this;
+        getContext().getLog().info("Bot is deregistered ");
+        return Behaviors.stopped();
     }
 
     private Behavior<Message> onListingResponse(ListingResponse listingResponse) {
         getContext().getLog().info("Received listing from receptionist");
         for (ActorRef<Message> boardRef : listingResponse.listing.getServiceInstances(serviceKeyForBoard)) {
             this.boardRef = boardRef;
+            boardRef.tell(new RegisterMessage(actorName, botRef));
             getContext().getLog().info("Stored board reference from receptionist");
         }
         return this;
@@ -149,36 +148,12 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     private Behavior<Message> onPing() {
         getContext().getLog().info("Bot {} got pinged", actorName);
         if(boardRef != null){
-            boardRef.tell(new PingResponseMessage(actorName, getContext().getSelf()));
+            boardRef.tell(new PingResponseMessage(actorName, botRef));
             getContext().getLog().info("Bot {} responded to the ping", actorName);
         }
         else{
             getContext().getLog().info("No board reference found");
         }
-        return this;
-    }
-
-    private Behavior<Message> onDeregister(DeregisterMessage message) {
-        getContext().getLog().info("Deregistering because: {}", message.reason());
-        return Behaviors.stopped();
-    }
-
-    private Behavior<Message> onChosenDirection(ChosenDirectionMessage message) {
-        getContext().getLog().info("Moving in direction: {}", message.chosenDirection());
-        return this;
-    }
-
-    private Behavior<Message> onUnexpectedMessage(UnexpectedMessage unexpectedMessage) {
-        getContext().getLog().error(unexpectedMessage.description());
-        return this;
-    }
-
-    private Behavior<Message> onRegister(RegisterMessage message) {
-        getContext().getLog().info("Bot registered: {}", message.name());
-
-        // registration logic..
-
-
         return this;
     }
 }

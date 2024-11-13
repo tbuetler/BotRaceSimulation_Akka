@@ -12,6 +12,7 @@ import ch.bfh.akka.botrace.board.actor.BoardRoot;
 import ch.bfh.akka.botrace.board.actor.ClusterListener;
 import ch.bfh.akka.botrace.common.Message;
 import ch.bfh.akka.botrace.board.model.BoardModel;
+import ch.bfh.akka.botrace.common.boardmessage.StartRaceMessage;
 import ch.bfh.akka.botrace.common.boardmessage.PauseMessage;
 import ch.bfh.akka.botrace.common.boardmessage.ResumeMessage;
 import ch.bfh.akka.botrace.common.boardmessage.StartMessage;
@@ -26,8 +27,9 @@ public class BoardMain {
      *
      * @param args not used
      */
-    private static ActorSystem<Message> board;
-    //private static ActorSystem<Void> board;
+    private static ActorRef<Message> boardRef;
+    //private static ActorSystem<Message> board;
+    private static ActorSystem<Void> board;
     private static boolean loggedIn = false;
     private static Scanner scanner = new Scanner(System.in);
 
@@ -47,11 +49,10 @@ public class BoardMain {
             case 5 -> "board5.txt";
             default -> "board1.txt";
         };
-        // Create the board Akka system with initial actors.
-        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/" + boardChoiceShortcut);
-
-        board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
-        //board = ActorSystem.create(rootBehavior(), "ClusterSystem");
+        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
+        //boardModel = new BoardModel("C:\\Users\\gil\\IdeaProjects\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\"+boardChoiceShortcut);
+        board = ActorSystem.create(rootBehavior(), "ClusterSystem");
+        //board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
         board.log().info("Board Actor System created");
         runCli(); // display application
     }
@@ -64,9 +65,9 @@ public class BoardMain {
     private static Behavior<Void> rootBehavior() {
         return Behaviors.setup(context -> {
 
-            context.spawn(ClusterListener.create(), "ClusterListener");
+            context.spawn(ClusterListener.create(),"ClusterListener");
 
-            context.spawn(BoardRoot.create(boardModel), "BoardRoot");
+            boardRef = context.spawn(BoardRoot.create(boardModel), "BoardRoot");
 
             context.getLog().info("BoardRoot with BoardModel created");
 
@@ -107,6 +108,9 @@ public class BoardMain {
             switch (choice) {
                 case 1:
                     pause();
+                    System.out.println("Starting the game...");
+                    boardRef.tell(new StartRaceMessage());
+                    displayBoard();
                     break;
                 case 2:
                     resume();
@@ -122,17 +126,17 @@ public class BoardMain {
 
     public static void startGame() {
         System.out.println("Game started");
-        board.tell(new StartMessage());
+        boardRef.tell(new StartMessage());
         displayBoard();
     }
 
     private static void pause() {
-        board.tell(new PauseMessage());
+        boardRef.tell(new PauseMessage());
         System.out.println("Game paused");
     }
 
     private static void resume() {
-        board.tell(new ResumeMessage());
+        boardRef.tell(new ResumeMessage());
         System.out.println("Game resumed");
     }
 
