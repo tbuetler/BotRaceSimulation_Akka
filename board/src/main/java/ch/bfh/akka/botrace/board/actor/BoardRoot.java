@@ -3,6 +3,7 @@
  */
 package ch.bfh.akka.botrace.board.actor;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractOnMessageBehavior;
 import akka.actor.typed.javadsl.ActorContext;
@@ -80,6 +81,7 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 			case RegisterMessage registerMessage 										-> onRegisterMessage(registerMessage);
 			case AvailableDirectionsRequestMessage availableDirectionsRequestMessage 	-> onAvailableDirectionsRequestMessage(availableDirectionsRequestMessage);
 			case ChosenDirectionMessage chosenDirectionMessage 							-> onChosenDirectionMessage(chosenDirectionMessage);
+			case StartRaceMessage startRaceMessage										-> onStartRaceMessage(startRaceMessage);
 
             default -> throw new IllegalStateException("Message not handled: " + message);
         };
@@ -100,6 +102,15 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		boardModel.deregister(message.botRef());
 		message.botRef().tell(new UnregisteredMessage());
 
+		return this;
+	}
+
+	Behavior<Message> onStartRaceMessage(StartRaceMessage startRaceMessage) {
+		getContext().getLog().info("Starting race");
+
+		for(ActorRef<Message> ref : boardModel.getBots()){
+			ref.tell(new StartMessage());
+		}
 		return this;
 	}
 

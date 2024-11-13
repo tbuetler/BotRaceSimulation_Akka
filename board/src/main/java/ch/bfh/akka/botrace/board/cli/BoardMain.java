@@ -12,6 +12,7 @@ import ch.bfh.akka.botrace.board.actor.BoardRoot;
 import ch.bfh.akka.botrace.board.actor.ClusterListener;
 import ch.bfh.akka.botrace.common.Message;
 import ch.bfh.akka.botrace.board.model.BoardModel;
+import ch.bfh.akka.botrace.common.boardmessage.StartRaceMessage;
 
 import java.io.IOException;
 import java.util.Scanner;
@@ -22,6 +23,7 @@ public class BoardMain {
      * @param args not used
      */
     private static ActorSystem<Void> board;
+    private static ActorRef<Message> boardRef;
     private static boolean loggedIn = false;
     private static Scanner scanner = new Scanner(System.in);
 
@@ -29,7 +31,7 @@ public class BoardMain {
 
     public static void main(String[] args) throws IOException {
         // Create the board Akka system with initial actors.
-        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/board1.txt");
+        boardModel = new BoardModel("C:\\Users\\gil\\IdeaProjects\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\board1.txt");
 
         board = ActorSystem.create(rootBehavior(), "ClusterSystem");
         board.log().info("Board Actor System created");
@@ -45,7 +47,7 @@ public class BoardMain {
 
             context.spawn(ClusterListener.create(),"ClusterListener");
 
-            context.spawn(BoardRoot.create(boardModel), "BoardRoot");
+            boardRef = context.spawn(BoardRoot.create(boardModel), "BoardRoot");
 
             context.getLog().info("BoardRoot with BoardModel created");
 
@@ -103,6 +105,7 @@ public class BoardMain {
             switch (choice) {
                 case 1:
                     System.out.println("Starting the game...");
+                    boardRef.tell(new StartRaceMessage());
                     displayBoard();
                     break;
                 case 2:

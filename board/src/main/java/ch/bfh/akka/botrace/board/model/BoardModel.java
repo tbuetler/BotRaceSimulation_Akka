@@ -26,6 +26,7 @@ public class BoardModel implements Board {
     private Position end;
     private Map<ActorRef<Message>, Position> playerPosition = new HashMap<>();
     private Map<ActorRef<Message>, String> playerName = new HashMap<>();
+    private List<ActorRef<Message>> bots = new ArrayList<>();
 
 
 
@@ -76,6 +77,7 @@ public class BoardModel implements Board {
         //Todo: does register need to send a message back to bot?
         playerName.put(botRef, name);
         playerPosition.put(botRef, start);
+        bots.add(botRef);
     }
 
     @Override
@@ -257,5 +259,9 @@ public class BoardModel implements Board {
 
     public Map<ActorRef<Message>, String> getPlayerName() {
         return playerName;
+    }
+
+    public List<ActorRef<Message>> getBots(){
+        return bots;
     }
 }
