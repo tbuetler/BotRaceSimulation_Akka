@@ -82,9 +82,10 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 			case AvailableDirectionsRequestMessage availableDirectionsRequestMessage 	-> onAvailableDirectionsRequestMessage(availableDirectionsRequestMessage);
 			case ChosenDirectionMessage chosenDirectionMessage 							-> onChosenDirectionMessage(chosenDirectionMessage);
 			case StartRaceMessage startRaceMessage										-> onStartRaceMessage(startRaceMessage);
-			case PauseMessage pauseMessage 												-> onPauseMessage(pauseMessage);
 
-			case ResumeMessage resumeMessage	-> onResumeMessage(resumeMessage);
+			// Events coming from user input sending to all bots
+			case PauseMessage pauseMessage 												-> onPauseMessage(pauseMessage);
+			case ResumeMessage resumeMessage											-> onResumeMessage(resumeMessage);
             default -> throw new IllegalStateException("Message not handled: " + message);
         };
 
