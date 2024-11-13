@@ -13,9 +13,7 @@ import ch.bfh.akka.botrace.board.model.BoardModel;
 import ch.bfh.akka.botrace.common.BoardService;
 import ch.bfh.akka.botrace.common.Direction;
 import ch.bfh.akka.botrace.common.Message;
-import ch.bfh.akka.botrace.common.boardmessage.AvailableDirectionsReplyMessage;
-import ch.bfh.akka.botrace.common.boardmessage.ChosenDirectionIgnoredMessage;
-import ch.bfh.akka.botrace.common.boardmessage.SetupMessage;
+import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
 import java.util.List;
@@ -61,6 +59,13 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		context.getLog().info(getClass().getSimpleName() + ": Registered at the receptionist");
 	}
 
+
+	/*TODO: sennd startMessage to all bots if the user presses start in the GUI
+	   startMessage sends the parameter speed.
+	 */
+
+
+
 	/**
 	 * Handles the received messages.
 	 * @param message a message.
@@ -89,48 +94,55 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		return this;
 	}
 
-	Behavior<Message> onDeregisterMessage(DeregisterMessage deregisterMessage) {
-		getContext().getLog().info("Deregistering because: {}", deregisterMessage.reason());
+	Behavior<Message> onDeregisterMessage(DeregisterMessage message) {
+		getContext().getLog().info("Deregistering because: {}", message.reason());
 		// unregistering from boardModel
-		boardModel.deregister(deregisterMessage.botRef());
+		boardModel.deregister(message.botRef());
+		message.botRef().tell(new UnregisteredMessage());
+
 		return this;
 	}
 
-	Behavior<Message> onRegisterMessage(RegisterMessage registerMessage) {
-		getContext().getLog().info("Registering: {}", registerMessage.name());
+	Behavior<Message> onRegisterMessage(RegisterMessage message) {
+		getContext().getLog().info("Registering: {}", message.name());
 		// adding to boardModel
-		boardModel.registerNewBot(registerMessage.name(), registerMessage.botRef());
+		boardModel.registerNewBot(message.name(), message.botRef());
 
 		//TODO: What is the sleepTime parameter @SetUpMessage() ??? I just put 600 --> needs to be adjusted
 
 		// sending SetupMessage back to bot
-		registerMessage.botRef().tell(new SetupMessage(600));
+		message.botRef().tell(new SetupMessage(600));
 		return this;
 	}
 
-	Behavior<Message> onAvailableDirectionsRequestMessage(AvailableDirectionsRequestMessage availableDirectionsRequestMessage) {
+	Behavior<Message> onAvailableDirectionsRequestMessage(AvailableDirectionsRequestMessage message) {
 		getContext().getLog().info("Requesting available directions");
 
 		//getting data from boardmodel
-		List<Direction> directions = boardModel.getAvailableDirection(availableDirectionsRequestMessage.botRef());
-		int distance = boardModel.getDistanceToTarget(availableDirectionsRequestMessage.botRef());
+		List<Direction> directions = boardModel.getAvailableDirection(message.botRef());
+		int distance = boardModel.getDistanceToTarget(message.botRef());
 
 		//sending Message back to Bot
-		availableDirectionsRequestMessage.botRef().tell(new AvailableDirectionsReplyMessage(directions, distance));
+		message.botRef().tell(new AvailableDirectionsReplyMessage(directions, distance));
 
 		return this;
 	}
 
-	Behavior<Message> onChosenDirectionMessage(ChosenDirectionMessage chosenDirectionMessage) {
+	Behavior<Message> onChosenDirectionMessage(ChosenDirectionMessage message) {
 
 		// Try to play move
-		if(boardModel.playChosenDirection(chosenDirectionMessage.chosenDirection(),chosenDirectionMessage.botRef())){
-			getContext().getLog().info("Move Played: {}", chosenDirectionMessage.chosenDirection());
+		if(boardModel.playChosenDirection(message.chosenDirection(),message.botRef())){
+			getContext().getLog().info("Move Played: {}", message.chosenDirection());
+
+			// if bot finished -> new TargetReachedMessage
+			if(boardModel.checkIfBotFinished(message.botRef())){
+				message.botRef().tell(new TargetReachedMessage());
+			}
 		}
 		// Send ChosenDirectionIgnoredMessage if failed to play move
 		else{
-			getContext().getLog().info("Move Failed: {}", chosenDirectionMessage.chosenDirection());
-			chosenDirectionMessage.botRef().tell(new ChosenDirectionIgnoredMessage("Move not Possible"));
+			getContext().getLog().info("Move Failed: {}", message.chosenDirection());
+			message.botRef().tell(new ChosenDirectionIgnoredMessage("Move not Possible"));
 		}
 		return this;
 	}
