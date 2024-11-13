@@ -25,7 +25,6 @@ import java.util.Random;
  * The root actor of the Bot actor system.
  */
 public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian actor
-    Random random = new Random();
 
     /**
      * The service key instance to lookup for the service name {@link BoardService#SERVICE_NAME} of the board.
@@ -112,6 +111,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onChosenDirectionIgnored(ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage){
+        getContext().getLog().info("Chosen direction was ignored. Reason: {}", chosenDirectionIgnoredMessage.reason());
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
