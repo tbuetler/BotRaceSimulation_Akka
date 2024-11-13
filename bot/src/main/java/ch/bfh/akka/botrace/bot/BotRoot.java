@@ -13,6 +13,7 @@ import akka.actor.typed.receptionist.Receptionist.Listing;
 import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.common.BoardService;
 import ch.bfh.akka.botrace.common.Message;
+import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
 /**
@@ -58,6 +59,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         context.getSelf().tell(new RegisterMessage(botName, context.getSelf()));
     }
 
+    private ActorRef<Message> boardRef;
+    private final String actorName = getContext().getSelf().path().name();
+
     /**
      * Handle incoming messages.
      * @param message a message
@@ -67,7 +71,14 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     public Behavior<Message> onMessage(Message message) {
 
         return switch(message){
-            case PingResponseMessage pingResponse                                      -> onPingResponse(pingResponse);
+            case PingMessage ignored                                                   -> onPing();
+            case SetupMessage setupMessage                                             -> onSetup(setupMessage);
+            case StartMessage startMessage                                             -> onStart(startMessage);
+            case AvailableDirectionsReplyMessage availableDirectionsReplyMessage       -> onAvailableDirectionsReply(availableDirectionsReplyMessage);
+            case ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage           -> onChosenDirectionIgnored(chosenDirectionIgnoredMessage);
+            case TargetReachedMessage targetReachedMessage                             -> onTargetReached(targetReachedMessage);
+            case PauseMessage pauseMessage                                             -> onPause(pauseMessage);
+            case ResumeMessage resumeMessage                                           -> onResume(resumeMessage);
             case DeregisterMessage deregisterMessage                                   -> onDeregister(deregisterMessage);
             case ChosenDirectionMessage chosenDirectionMessage                         -> onChosenDirection(chosenDirectionMessage);
             case AvailableDirectionsRequestMessage availableDirectionsRequestMessage   -> onAvailableDirectionsRequest(availableDirectionsRequestMessage);
@@ -111,6 +122,15 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onAvailableDirectionsRequest(AvailableDirectionsRequestMessage message) {
         getContext().getLog().info("Requesting available directions");
+        return this;
+    }
+
+    private Behavior<Message> onRegister(RegisterMessage message) {
+        getContext().getLog().info("Bot registered: {}", message.name());
+
+        // registration logic..
+
+
         return this;
     }
 }
