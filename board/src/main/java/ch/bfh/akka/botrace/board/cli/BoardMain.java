@@ -19,6 +19,7 @@ import ch.bfh.akka.botrace.common.boardmessage.ResumeMessage;
 import javafx.application.Platform;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Scanner;
 
 public class BoardMain implements BoardUpdateListener {
@@ -38,7 +39,7 @@ public class BoardMain implements BoardUpdateListener {
 
     public static void main(String[] args) throws IOException {
         String boardChoiceShortcut = "";
-        int boardChoice = 1; // Please choose your board
+        int boardChoice = 1; // Assume this is the board choice logic
         boardChoiceShortcut = switch (boardChoice) {
             case 1 -> "board1.txt";
             case 2 -> "board2.txt";
@@ -47,16 +48,22 @@ public class BoardMain implements BoardUpdateListener {
             case 5 -> "board5.txt";
             default -> "board1.txt";
         };
-        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
-        //boardModel = new BoardModel("C:\\Users\\gil\\IdeaProjects\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\"+boardChoiceShortcut);
 
+        URL resourceUrl = BoardMain.class.getResource("/ch/bfh/akka/botrace/board/model/" + boardChoiceShortcut);
+        if (resourceUrl == null) {
+            System.out.println("Resource file not found: " + boardChoiceShortcut);
+            return;
+        }
+
+        String filePath = resourceUrl.getFile();
+        boardModel = new BoardModel(filePath);
         boardModel.addBoardUpdateListener(new BoardMain()); // register cli board as listener of BoardModel
 
         board = ActorSystem.create(rootBehavior(), "ClusterSystem");
-        //board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
-        board.log().info("Board Actor System created");
+        System.out.println("Board Actor System created");
         runCli(); // display application
     }
+
 
     /**
      * Creates the two actors {@link ClusterListener} and {@link BoardRoot}.
