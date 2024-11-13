@@ -211,24 +211,6 @@ public class BoardModel implements Board {
         return false;
     }
 
-
-    // Inner class for position
-    private static class Position {
-        int row, col;
-        Position(int row, int col) {
-            this.row = row;
-            this.col = col;
-        }
-
-        public int getCol() {
-            return col;
-        }
-        public int getRow() {
-            return row;
-        }
-    }
-
-
     public void deregister(ActorRef<Message> botRef) {
         playerPosition.remove(botRef);
         playerName.remove(botRef);
@@ -268,40 +250,12 @@ public class BoardModel implements Board {
         return boardCopy;
     }
 
-    public String displayBoard(){
-        StringBuilder builder = new StringBuilder();
-        char[][] boardCopy = new char[board.length][];
-        for (int i = 0; i < board.length; i++) {
-            boardCopy[i] = board[i].clone();
-        }
-        //set players
-        for(Map.Entry<ActorRef<Message>, Position> entry : playerPosition.entrySet()) {
-            Position pos = entry.getValue();
-            String player = playerName.get(entry.getKey());
 
-            // Place the player's name on the board (e.g., just the first letter for simplicity)
-            if (pos.getRow() >= 0 && pos.getRow() < rows && pos.getCol() >= 0 && pos.getCol() < cols) {
-                boardCopy[pos.getRow()][pos.getCol()] = player.charAt(0);
-            }
-        }
-        // string representation of the board
-        for (char[] row : boardCopy) {
-            for (char c : row) {
-                builder.append(c).append(" ");
-            }
-            builder.append(System.lineSeparator());
-        }
-        return builder.toString();
+    public Map<ActorRef<Message>, Position> getPlayerPosition() {
+        return playerPosition;
     }
 
-    public void printBoard(){
-        System.out.println("\nCurrent state of the Playfield:\n\n");
-        for (char[] row : this.getBoard()) {
-            for (char c : row) {
-                System.out.print(c + " ");
-            }
-            System.out.println(); // Move to the next line after each row
-        }
+    public Map<ActorRef<Message>, String> getPlayerName() {
+        return playerName;
     }
-
 }
