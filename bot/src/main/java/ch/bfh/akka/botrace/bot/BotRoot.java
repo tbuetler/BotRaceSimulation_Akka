@@ -79,14 +79,15 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return switch(message){
             case PingMessage ignored                                                   -> onPing();
             case SetupMessage setupMessage                                             -> onSetup(setupMessage);
-            case StartMessage startMessage                                             -> onStart(startMessage);
+            case StartMessage ignored                                                  -> onStart();
             case AvailableDirectionsReplyMessage availableDirectionsReplyMessage       -> onAvailableDirectionsReply(availableDirectionsReplyMessage);
             case ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage           -> onChosenDirectionIgnored(chosenDirectionIgnoredMessage);
-            case TargetReachedMessage targetReachedMessage                             -> onTargetReached(targetReachedMessage);
-            case PauseMessage pauseMessage                                             -> onPause(pauseMessage);
-            case ResumeMessage resumeMessage                                           -> onResume(resumeMessage);
+            case TargetReachedMessage ignored                                          -> onTargetReached();
+            case PauseMessage ignored                                                  -> onPause();
+            case ResumeMessage ignored                                                 -> onResume();
             case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
-            case UnregisteredMessage unregisteredMessage                               -> onUnregister(unregisteredMessage);
+            case UnregisteredMessage ignored                                           -> onUnregister();
+            case UnexpectedMessage unexpectedMessage                                   -> onUnexpectedMessage(unexpectedMessage);
 
             default -> throw new IllegalStateException("Unexpected value: " + message);
         };
@@ -105,7 +106,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return this;
     }
 
-    private Behavior<Message> onStart(StartMessage startMessage){
+    private Behavior<Message> onStart(){
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
@@ -115,22 +116,22 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return this;
     }
 
-    private Behavior<Message> onTargetReached(TargetReachedMessage targetReachedMessage){
+    private Behavior<Message> onTargetReached(){
         boardRef.tell(new DeregisterMessage("Bot reached Target", this.botRef));
         return this;
     }
 
-    private Behavior<Message> onPause(PauseMessage pauseMessage){
-
+    private Behavior<Message> onPause(){
+        getContext().getLog().info("Game was paused");
         return this;
     }
 
-    private Behavior<Message> onResume(ResumeMessage resumeMessage){
+    private Behavior<Message> onResume(){
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
 
-    private Behavior<Message> onUnregister(UnregisteredMessage unregisteredMessage){
+    private Behavior<Message> onUnregister(){
         getContext().getLog().info("Bot is deregistered ");
         return Behaviors.stopped();
     }
@@ -154,6 +155,11 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         else{
             getContext().getLog().info("No board reference found");
         }
+        return this;
+    }
+
+    private Behavior<Message> onUnexpectedMessage(UnexpectedMessage unexpectedMessage) {
+        getContext().getLog().error(unexpectedMessage.description());
         return this;
     }
 }
