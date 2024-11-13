@@ -23,6 +23,7 @@ import java.util.Scanner;
 public class BoardMain {
     /**
      * Entry point for the Board actor system.
+     *
      * @param args not used
      */
     private static ActorSystem<Message> board;
@@ -47,7 +48,7 @@ public class BoardMain {
             default -> "board1.txt";
         };
         // Create the board Akka system with initial actors.
-        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
+        boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/" + boardChoiceShortcut);
 
         board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
         //board = ActorSystem.create(rootBehavior(), "ClusterSystem");
@@ -57,12 +58,13 @@ public class BoardMain {
 
     /**
      * Creates the two actors {@link ClusterListener} and {@link BoardRoot}.
+     *
      * @return a void behavior
      */
     private static Behavior<Void> rootBehavior() {
         return Behaviors.setup(context -> {
 
-            context.spawn(ClusterListener.create(),"ClusterListener");
+            context.spawn(ClusterListener.create(), "ClusterListener");
 
             context.spawn(BoardRoot.create(boardModel), "BoardRoot");
 
@@ -121,7 +123,7 @@ public class BoardMain {
     public static void startGame() {
         System.out.println("Game started");
         board.tell(new StartMessage());
-        updateBoard(boardModel.displayBoard());
+        displayBoard();
     }
 
     private static void pause() {
@@ -149,7 +151,18 @@ public class BoardMain {
         }
     }
 
-    public static void updateBoard(String boardRepresentation) {
-        System.out.println(boardRepresentation);
+    private static void displayBoard() {
+        System.out.println("Current Board:");
+        char[][] currentBoard = boardModel.getBoard();
+        if (currentBoard != null) {
+            for (int i = 0; i < currentBoard.length; i++) {
+                for (int j = 0; j < currentBoard[i].length; j++) {
+                    System.out.print(currentBoard[i][j] + " ");
+                }
+                System.out.println();
+            }
+        } else {
+            System.out.println("No board data available.");
+        }
     }
 }
