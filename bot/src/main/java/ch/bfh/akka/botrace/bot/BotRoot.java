@@ -14,6 +14,7 @@ import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.common.BoardService;
 import ch.bfh.akka.botrace.common.Message;
 import ch.bfh.akka.botrace.common.boardmessage.*;
+import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
 /**
