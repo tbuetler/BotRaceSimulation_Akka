@@ -185,6 +185,7 @@ public class BoardModel implements Board {
 
 
     public String displayBoard(){
+        StringBuilder builder = new StringBuilder();
 
         char[][] boardCopy = new char[board.length][];
         for (int i = 0; i < board.length; i++) {
@@ -203,7 +204,15 @@ public class BoardModel implements Board {
             }
         }
 
-        return Arrays.deepToString(boardCopy);
+        // string representation of the board
+        for (char[] row : boardCopy) {
+            for (char c : row) {
+                builder.append(c).append(" ");
+            }
+            builder.append(System.lineSeparator());
+        }
+
+        return builder.toString();
     }
 
 }
