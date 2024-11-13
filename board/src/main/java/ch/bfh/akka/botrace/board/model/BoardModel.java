@@ -268,6 +268,32 @@ public class BoardModel implements Board {
         return boardCopy;
     }
 
+    public String displayBoard(){
+        StringBuilder builder = new StringBuilder();
+        char[][] boardCopy = new char[board.length][];
+        for (int i = 0; i < board.length; i++) {
+            boardCopy[i] = board[i].clone();
+        }
+        //set players
+        for(Map.Entry<ActorRef<Message>, Position> entry : playerPosition.entrySet()) {
+            Position pos = entry.getValue();
+            String player = playerName.get(entry.getKey());
+
+            // Place the player's name on the board (e.g., just the first letter for simplicity)
+            if (pos.getRow() >= 0 && pos.getRow() < rows && pos.getCol() >= 0 && pos.getCol() < cols) {
+                boardCopy[pos.getRow()][pos.getCol()] = player.charAt(0);
+            }
+        }
+        // string representation of the board
+        for (char[] row : boardCopy) {
+            for (char c : row) {
+                builder.append(c).append(" ");
+            }
+            builder.append(System.lineSeparator());
+        }
+        return builder.toString();
+    }
+
     public void printBoard(){
         System.out.println("\nCurrent state of the Playfield:\n\n");
         for (char[] row : this.getBoard()) {
