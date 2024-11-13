@@ -10,12 +10,8 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.board.model.BoardModel;
-import ch.bfh.akka.botrace.common.BoardService;
-import ch.bfh.akka.botrace.common.Direction;
-import ch.bfh.akka.botrace.common.Message;
-import ch.bfh.akka.botrace.common.boardmessage.AvailableDirectionsReplyMessage;
-import ch.bfh.akka.botrace.common.boardmessage.ChosenDirectionIgnoredMessage;
-import ch.bfh.akka.botrace.common.boardmessage.SetupMessage;
+import ch.bfh.akka.botrace.common.*;
+import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
 import java.util.List;
@@ -29,7 +25,7 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 	/** The service key for the board service {@link BoardService#SERVICE_NAME} actor system. */
 	public final static ServiceKey<Message> SERVICE_KEY = ServiceKey.create(Message.class, BoardService.SERVICE_NAME);
 
-	BoardModel boardModel;
+	private final BoardModel boardModel;
 
 	/**
 	 * Factory method which creates the root actor of the board.
@@ -70,6 +66,9 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 	public Behavior<Message> onMessage(Message message) {
 
 		switch (message){
+			case StartMessage ignored -> onStartGame();
+			case PauseMessage ignored -> onPauseGame();
+			case ResumeMessage ignored -> onResumeGame();
 			case PingResponseMessage pingResponseMessage								-> onPingResponseMessage(pingResponseMessage);
 			case DeregisterMessage deregisterMessage 									-> onDeregisterMessage(deregisterMessage);
 			case RegisterMessage registerMessage 										-> onRegisterMessage(registerMessage);
@@ -80,6 +79,21 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
         };
 
 		return Behaviors.same();
+	}
+
+	Behavior<Message> onStartGame() {
+		getContext().getLog().info("Game started");
+		return this;
+	}
+
+	Behavior<Message> onPauseGame() {
+		getContext().getLog().info("Game paused");
+		return this;
+	}
+
+	Behavior<Message> onResumeGame() {
+		getContext().getLog().info("Game resumed");
+		return this;
 	}
 
 	Behavior<Message> onPingResponseMessage(PingResponseMessage pingResponseMessage) {
