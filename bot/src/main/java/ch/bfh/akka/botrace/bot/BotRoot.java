@@ -116,7 +116,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onTargetReached(TargetReachedMessage targetReachedMessage){
-
+        boardRef.tell(new DeregisterMessage("Bot reached Target", this.botRef));
         return this;
     }
 
