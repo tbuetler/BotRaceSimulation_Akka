@@ -62,6 +62,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private ActorRef<Message> boardRef;
     private final String actorName = getContext().getSelf().path().name();
+    private final ActorRef<Message> botRef = getContext().getSelf();
 
     /**
      * Handle incoming messages.
@@ -84,7 +85,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
             case ChosenDirectionMessage chosenDirectionMessage                         -> onChosenDirection(chosenDirectionMessage);
             case AvailableDirectionsRequestMessage availableDirectionsRequestMessage   -> onAvailableDirectionsRequest(availableDirectionsRequestMessage);
             case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
-            case RegisterMessage registerMessage                                       -> onRegister(registerMessage);
             case UnregisteredMessage unregisteredMessage                               -> onUnregister(unregisteredMessage);
 
             default -> throw new IllegalStateException("Unexpected value: " + message);
@@ -102,12 +102,12 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onStart(StartMessage startMessage){
-
+        boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
 
     private Behavior<Message> onChosenDirectionIgnored(ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage){
-
+        boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
 
@@ -122,7 +122,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onResume(ResumeMessage resumeMessage){
-
+        boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
 
@@ -135,6 +135,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         getContext().getLog().info("Received listing from receptionist");
         for (ActorRef<Message> boardRef : listingResponse.listing.getServiceInstances(serviceKeyForBoard)) {
             this.boardRef = boardRef;
+            boardRef.tell(new RegisterMessage(actorName, botRef));
             getContext().getLog().info("Stored board reference from receptionist");
         }
         return this;
@@ -143,7 +144,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     private Behavior<Message> onPing() {
         getContext().getLog().info("Bot {} got pinged", actorName);
         if(boardRef != null){
-            boardRef.tell(new PingResponseMessage(actorName, getContext().getSelf()));
+            boardRef.tell(new PingResponseMessage(actorName, botRef));
             getContext().getLog().info("Bot {} responded to the ping", actorName);
         }
         else{
@@ -164,15 +165,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onAvailableDirectionsRequest(AvailableDirectionsRequestMessage message) {
         getContext().getLog().info("Requesting available directions");
-        return this;
-    }
-
-    private Behavior<Message> onRegister(RegisterMessage message) {
-        getContext().getLog().info("Bot registered: {}", message.name());
-
-        // registration logic..
-
-
         return this;
     }
 }
