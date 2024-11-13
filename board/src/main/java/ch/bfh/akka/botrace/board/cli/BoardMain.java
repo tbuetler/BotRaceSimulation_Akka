@@ -28,8 +28,8 @@ public class BoardMain {
      * @param args not used
      */
     private static ActorRef<Message> boardRef;
-    private static ActorSystem<Message> board;
-    //private static ActorSystem<Void> board;
+    //private static ActorSystem<Message> board;
+    private static ActorSystem<Void> board;
     private static boolean loggedIn = false;
     private static Scanner scanner = new Scanner(System.in);
 
@@ -51,9 +51,8 @@ public class BoardMain {
         };
         boardModel = new BoardModel("/Users/martin/BFH/SW2/java-06/board/target/classes/ch/bfh/akka/botrace/board/model/"+boardChoiceShortcut);
         //boardModel = new BoardModel("C:\\Users\\gil\\IdeaProjects\\java-06\\board\\src\\main\\resources\\ch\\bfh\\akka\\botrace\\board\\model\\"+boardChoiceShortcut);
-
-        board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
-        //board = ActorSystem.create(rootBehavior(), "ClusterSystem");
+        board = ActorSystem.create(rootBehavior(), "ClusterSystem");
+        //board = ActorSystem.create(BoardRoot.create(boardModel), "BoardActorSystem");
         board.log().info("Board Actor System created");
         runCli(); // display application
     }
@@ -127,17 +126,17 @@ public class BoardMain {
 
     public static void startGame() {
         System.out.println("Game started");
-        board.tell(new StartMessage());
+        boardRef.tell(new StartMessage());
         displayBoard();
     }
 
     private static void pause() {
-        board.tell(new PauseMessage());
+        boardRef.tell(new PauseMessage());
         System.out.println("Game paused");
     }
 
     private static void resume() {
-        board.tell(new ResumeMessage());
+        boardRef.tell(new ResumeMessage());
         System.out.println("Game resumed");
     }
 
