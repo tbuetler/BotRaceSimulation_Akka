@@ -27,17 +27,7 @@ public class BoardModel implements Board {
     private Map<ActorRef<Message>, Position> playerPosition = new HashMap<>();
     private Map<ActorRef<Message>, String> playerName = new HashMap<>();
 
-    //directional offsets for 8 possible moves
-    private static final int[][] DIRECTIONS = {
-            {-1, 0}, // N
-            {1, 0},  // S
-            {0, -1}, // W
-            {0, 1},  // E
-            {-1, -1}, // NE
-            {-1, 1},  // NW
-            {1, -1},  // SW
-            {1, 1}    // SE
-    };
+
 
     /**
      *
@@ -72,6 +62,11 @@ public class BoardModel implements Board {
         for (int i = 0; i < this.rows; i++) {
             for (int j = 0; j < this.cols; j++) {
                 board[i][j] = rows.get(i).charAt(j);
+                if(board[i][j] == 'S'){
+                    this.start = new Position(i,j);
+                }if(board[i][j] == 'E'){
+                    this.end = new Position(i,j);
+                }
             }
         }
     }
@@ -88,13 +83,41 @@ public class BoardModel implements Board {
 
         //checks if move valid
         if(isMoveValid(botRef, direction)) {
-            Position pos = playerPosition.get(botRef);
+            int row = playerPosition.get(botRef).getRow();
+            int col = playerPosition.get(botRef).getCol();
 
-            int[] offset = DIRECTIONS[direction.ordinal()];
-            int newRow = pos.row + offset[0];
-            int newCol = pos.col + offset[1];
-
-            playerPosition.put(botRef, new Position(newRow, newCol));
+            switch (direction) {
+                case N:
+                    row -= 1;
+                    break;
+                case S:
+                    row += 1;
+                    break;
+                case E:
+                    col += 1;
+                    break;
+                case W:
+                    col -= 1;
+                    break;
+                case NE:
+                    row -= 1;
+                    col += 1;
+                    break;
+                case NW:
+                    row -= 1;
+                    col -= 1;
+                    break;
+                case SE:
+                    row += 1;
+                    col += 1;
+                    break;
+                case SW:
+                    row += 1;
+                    col -= 1;
+                    break;
+            }
+            Position newPosition = new Position(row,col);
+            playerPosition.put(botRef,newPosition);
             return true;
         }
 
@@ -105,16 +128,15 @@ public class BoardModel implements Board {
     @Override
     public List<Direction> getAvailableDirection(ActorRef<Message> botRef) {
 
-        List<Direction> directions = new ArrayList<>();
+        List<Direction> validDirections = new ArrayList<>();
 
-        //checks each direction if possible
-        for(Direction direction : Direction.values()) {
-            if(isMoveValid(botRef, direction)) {
-                directions.add(direction);
+        for(Direction direction : Direction.values()){
+            if(isMoveValid(botRef,direction)){
+                validDirections.add(direction);
             }
         }
 
-        return directions;
+        return validDirections;
     }
 
 
@@ -131,24 +153,64 @@ public class BoardModel implements Board {
     @Override
     public boolean isMoveValid(ActorRef<Message> botRef, Direction direction){
 
+        int row = playerPosition.get(botRef).getRow();
+        int col = playerPosition.get(botRef).getCol();
+
         // no check needed for no move
-        if(direction == Direction.X){
+        if (direction == Direction.X) {
             return true;
         }
 
-        Position pos = playerPosition.get(botRef);
-        int[] offset = DIRECTIONS[direction.ordinal()]; // Get the direction offset
+        // Get the board dimensions
+        int rows = board.length;
+        int cols = board[0].length;
 
-        int newRow = pos.row + offset[0];
-        int newCol = pos.col + offset[1];
+        switch (direction) {
+            case N:
+                if (row - 1 < 0 || board[row - 1][col] == 'X') {
+                    return false;
+                }else{return true;}
 
-        // Check if the new position is within the bounds of the board
-        return newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols;
+            case Direction.S:
+                if (row + 1 >= rows || board[row + 1][col] == 'X') {
+                    return false;
+                }else{return true;}
+
+            case Direction.E:
+                if (col + 1 >= cols || board[row][col + 1] == 'X') {
+                    return false;
+                }else{return true;}
+
+            case Direction.W:
+                if (col - 1 < 0 || board[row][col - 1] == 'X') {
+                    return false;
+                }else{return true;}
+
+            case Direction.NE:
+                if (row - 1 < 0 || col + 1 >= cols || board[row - 1][col + 1] == 'X') {
+                    return false;
+                }else{return true;}
+
+            case Direction.NW:
+                if (row - 1 < 0 || col - 1 < 0 || board[row - 1][col - 1] == 'X') {
+                    return false;
+                }else{return true;}
+
+
+            case Direction.SE:
+                if (row + 1 >= rows || col + 1 >= cols || board[row + 1][col + 1] == 'X') {
+                    return false;
+                }else{return true;}
+
+            case Direction.SW:
+                if (row + 1 >= rows || col - 1 < 0 || board[row + 1][col - 1] == 'X') {
+                    return false;
+                }else{return true;}
+        }
+
+        return false;
     }
 
-    public char[][] getBoard() {
-        return board;
-    }
 
     // Inner class for position
     private static class Position {
@@ -184,7 +246,7 @@ public class BoardModel implements Board {
     }
 
 
-    public String displayBoard(){
+    public char[][] getBoard(){
 
         char[][] boardCopy = new char[board.length][];
         for (int i = 0; i < board.length; i++) {
@@ -203,7 +265,17 @@ public class BoardModel implements Board {
             }
         }
 
-        return Arrays.deepToString(boardCopy);
+        return boardCopy;
+    }
+
+    public void printBoard(){
+        System.out.println("\nCurrent state of the Playfield:\n\n");
+        for (char[] row : this.getBoard()) {
+            for (char c : row) {
+                System.out.print(c + " ");
+            }
+            System.out.println(); // Move to the next line after each row
+        }
     }
 
 }
