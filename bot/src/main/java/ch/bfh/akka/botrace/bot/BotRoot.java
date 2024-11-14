@@ -8,6 +8,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractOnMessageBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.TimerScheduler;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.Receptionist.Listing;
 import akka.actor.typed.receptionist.ServiceKey;
@@ -18,14 +19,23 @@ import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Timer;
 
 /**
  * The root actor of the Bot actor system.
  */
+
+
+
 public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian actor
+
+    public record TimerMessage() implements Message { }
+
+    private final TimerScheduler<Message> timers;
 
     /**
      * The service key instance to lookup for the service name {@link BoardService#SERVICE_NAME} of the board.
@@ -44,7 +54,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
      * @return a behavior.
      */
     public static Behavior<Message> create(String botName) {
-        return Behaviors.setup(c -> new BotRoot(c, botName));
+        return Behaviors.setup(ctx -> Behaviors.withTimers(timers -> new BotRoot(ctx, timers, botName)));
     }
 
 
@@ -63,8 +73,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
      *
      * @param context the context of this actor system
      */
-    private BotRoot(ActorContext<Message> context, String botName) {
+    private BotRoot(ActorContext<Message> context, TimerScheduler<Message> timers, String botName) {
         super(context);
+        this.timers = timers;
         recentDirections = new ArrayList<>();
         this.moveCount = 0;
         this.currentPhase = Phase.REGISTERING;
@@ -101,6 +112,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
             case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
             case UnregisteredMessage ignored                                           -> onUnregister();
             case UnexpectedMessage unexpectedMessage                                   -> onUnexpectedMessage(unexpectedMessage);
+            case TimerMessage ignored                                                  -> onTimerMessage();
 
             default -> throw new IllegalStateException("Unexpected value: " + message);
         };
@@ -109,6 +121,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message){
         getContext().getLog().info("Received available directions from board {}", message.directions());
         List<Direction> directionList = message.directions();
+
+        timers.startSingleTimer(new TimerMessage(), Duration.ofSeconds(1));
+
         int random = new Random().nextInt(directionList.size());
 
         this.moveCount++;
@@ -189,6 +204,11 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onUnexpectedMessage(UnexpectedMessage unexpectedMessage) {
         getContext().getLog().error(unexpectedMessage.description());
+        return this;
+    }
+
+    private Behavior<Message> onTimerMessage() {
+        boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
 }

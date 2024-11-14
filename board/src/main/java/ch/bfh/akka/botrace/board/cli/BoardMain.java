@@ -257,7 +257,7 @@ public class BoardMain implements BoardUpdateListener {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        boardRef.tell(new StartRaceMessage());
+        //boardRef.tell(new StartRaceMessage());
     }
 
     @Override
