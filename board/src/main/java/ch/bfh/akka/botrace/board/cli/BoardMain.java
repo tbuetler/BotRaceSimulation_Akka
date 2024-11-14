@@ -182,7 +182,7 @@ public class BoardMain implements BoardUpdateListener {
     public void boardUpdated() {
         displayBoard();// Call the display function whenever an update is notified
         try {
-            Thread.sleep(200);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

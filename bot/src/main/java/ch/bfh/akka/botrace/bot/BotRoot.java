@@ -58,6 +58,20 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     ArrayList<Integer> recentDistances;
 
 
+    // Parameters for collision-avoiding
+    private boolean avoiding = false;
+
+    /*
+    avoidDirection says which direction has been chosen to avoid collision
+    -1 = no collision
+    0 = left
+    1 = right
+
+     */
+    private int avoidTurn = -1;
+    private Direction avoidDirection;
+
+
     /**
      * Upon creation of the Bot root actor, it tells the {@link Receptionist} its
      * interest in receiving a list of services.
@@ -127,29 +141,74 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
             // first move is a random move from directionList
             int random = new Random().nextInt(root.size());
-            boardRef.tell(new ChosenDirectionMessage(root.get(random), this.botRef));
+            //boardRef.tell(new ChosenDirectionMessage(root.get(random), this.botRef));
+            boardRef.tell(new ChosenDirectionMessage(Direction.E, this.botRef));
 
 
 
             // save played direction && distanceToTarget
-            this.recentDirections.add(root.get(random));
-
+            //this.recentDirections.add(root.get(random));
+            this.recentDirections.add(Direction.E);
             // change phase to playing
             this.currentPhase = Phase.PLAYING;
             getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
-        }else{
+        }
+
+        else if (avoiding) {
+
+            // adjust path since it had to avoid collision
+            Direction nextDirection;
+            if(avoidTurn == 0){
+                nextDirection = getTurnDirection(this.avoidDirection,1);
+            }else{
+                nextDirection = getTurnDirection(this.avoidDirection, 0);
+            }
+
+            if(lookIfMovePossible(directionList, nextDirection)){
+                boardRef.tell(new ChosenDirectionMessage(nextDirection, this.botRef));
+                avoiding = false;
+            }else{
+                System.out.println("two objects next to each other");
+            }
+
+
+        } else{
 
             //calculating optimal direction
 
             // distance to target is smaller now --> play same move again
             if(recentDistances.getLast()> message.distance()){
 
+                boolean possible = lookIfMovePossible(directionList, recentDirections.getLast());
                 // look if possible to play same move again
-                if(lookIfMovePossible(directionList, recentDirections.getLast())){
+                if(possible){
                     boardRef.tell(new ChosenDirectionMessage(recentDirections.getLast(), this.botRef));
                     this.recentDirections.add(recentDirections.getLast());
+                }else{
+
+
+                    Direction lastDirection = this.recentDirections.getLast();
+
+                    // avoiding obstacle
+                    while(possible){
+                        int random = new Random().nextInt(0,2);
+                        // random for choosing left or right to avoid wall
+                        possible = lookIfMovePossible(directionList, getTurnDirection(lastDirection,random));
+                        if(possible){
+                            boardRef.tell(new ChosenDirectionMessage(getTurnDirection(lastDirection,random), this.botRef));
+                            this.avoidTurn = random;
+                            this.avoidDirection = getTurnDirection(lastDirection,random);
+                            this.avoiding = true;
+                        }else{
+                            // try rotating again until move is possible
+                            lastDirection = getTurnDirection(lastDirection, random);
+                        }
+                    }
+
                 }
                 // TODO: else try other move
+
+
 
 
                 // distance to target is bigger now --> play opposite move
@@ -158,8 +217,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
                 if(lookIfMovePossible(directionList, getTurnDirection(recentDirections.getLast(), 2))){
                     boardRef.tell(new ChosenDirectionMessage(getTurnDirection(recentDirections.getLast(), 2), this.botRef));
                     this.recentDirections.add(getTurnDirection(recentDirections.getLast(), 2));
-
                 }
+                // TODO: else try other move
+
                 // distance is equal play left or right (random)
             }else if (recentDistances.getLast()== message.distance()){
 
@@ -168,8 +228,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
                 if(lookIfMovePossible(directionList, getTurnDirection(recentDirections.getLast(), random))){
                     boardRef.tell(new ChosenDirectionMessage(getTurnDirection(recentDirections.getLast(), random), this.botRef));
                     this.recentDirections.add(getTurnDirection(recentDirections.getLast(), random));
-
                 }
+                // TODO: else try other move
+
             }
         }
         this.recentDistances.add(message.distance());
