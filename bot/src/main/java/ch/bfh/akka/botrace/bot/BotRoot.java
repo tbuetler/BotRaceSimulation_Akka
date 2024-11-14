@@ -45,8 +45,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return Behaviors.setup(c -> new BotRoot(c, botName));
     }
 
-
-
     private enum Phase{
         REGISTERING, READY, PLAYING, PAUSED, TARGET_REACHED
     }
@@ -55,20 +53,10 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     List<Direction> recentDirections;
     ArrayList<Integer> recentDistances;
 
-
     // Parameters for collision-avoiding
     private boolean avoiding = false;
-
-    /*
-    avoidDirection says which direction has been chosen to avoid collision
-    -1 = no collision
-    0 = left
-    1 = right
-
-     */
     private int avoidTurn = -1;
     private Direction avoidDirection;
-
 
     /**
      * Upon creation of the Bot root actor, it tells the {@link Receptionist} its
@@ -122,100 +110,142 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
 	// BotRoot.java
-
-	private Set<Position> visitedPositions = new HashSet<>();
 	private Map<Integer, Set<Direction>> visitedDirectionsByDistance = new HashMap<>();
 	private int currentX = 0; // Start at position (0, 0)
 	private int currentY = 0; // Start at position (0, 0)
+	private int stuckCounter = 0;  // Zähler für Rückkehrversuche
+	private int maxStuckTries = 5;  // Maximalanzahl der Versuche, bevor der Bot zurückgeht
+	private Set<Position> visitedPositions = new HashSet<>(); // Gespeicherte besuchte Positionen
+	private Set<Position> unvisitedPositions = new HashSet<>();  // Unbesuchte Positionen
+	private Map<Position, Boolean> visitedPositionsMap = new HashMap<>();
 
+	// Logik zur Vermeidung von Sackgassen und Wiederverwendung von unbesuchten Positionen
 	private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message) {
 		getContext().getLog().info("Received available directions from board {}", message.directions());
 		List<Direction> availableDirections = message.directions();
 		int currentDistance = message.distance();
 
-		// Wenn keine Richtung verfügbar ist, ist der Bot wahrscheinlich blockiert.
+		// Wenn der Bot keine Richtung mehr wählen kann
 		if (availableDirections.isEmpty()) {
-			getContext().getLog().info("No available directions. Bot is stuck!");
+			getContext().getLog().warn("No available directions! The bot might be stuck!");
 			return this;
 		}
 
+		// wenn das ziel neben dem bot ist soll er darauf zu gehen
+		if (currentDistance == 1) {
+			Direction firstUnvisitedDirection = findFirstUnvisitedDirection(availableDirections);
+			if (firstUnvisitedDirection != null) {
+				boardRef.tell(new ChosenDirectionMessage(firstUnvisitedDirection, botRef));
+				recentDirections.add(firstUnvisitedDirection);
+				Position firstPosition = getNewPosition(firstUnvisitedDirection);
+				visitedPositionsMap.put(firstPosition, true);
+				stuckCounter = 0;
+			}
+			return this;
+		}
+
+		// Wenn der Bot feststellt, dass er nicht weiterkommt
+		if (recentDirections.isEmpty()) {
+			Direction firstUnvisitedDirection = findFirstUnvisitedDirection(availableDirections);
+			if (firstUnvisitedDirection != null) {
+				boardRef.tell(new ChosenDirectionMessage(firstUnvisitedDirection, botRef));
+				recentDirections.add(firstUnvisitedDirection);
+				Position firstPosition = getNewPosition(firstUnvisitedDirection);
+				visitedPositionsMap.put(firstPosition, true);
+				stuckCounter = 0;
+			}
+			return this;
+		}
+
+		// Wenn der Bot keine unbesuchte Richtung findet, prüft er, ob er in einer Sackgasse steckt
 		Direction bestDirection = null;
-		int smallestDistance = currentDistance;
-		Map<Direction, Integer> directionDistances = new HashMap<>();
-
-		// Berechne die Distanz nach jedem möglichen Schritt
 		for (Direction direction : availableDirections) {
-			int newDistance = simulateDistanceAfterMove(direction, currentDistance);
-
-			// Vermeide Richtungen, die den Bot in bereits besuchte Positionen führen
-			if (hasVisitedPosition(currentX, currentY, direction)) {
-				continue;
-			}
-
-			// Wähle die Richtung mit der kürzesten Distanz zum Ziel
-			if (newDistance < smallestDistance) {
-				smallestDistance = newDistance;
+			Position newPosition = getNewPosition(direction);
+			// Überprüfen, ob die Position blockiert ist
+			if (!visitedPositionsMap.containsKey(newPosition) && !newPosition.isBlocked()) {
 				bestDirection = direction;
+				break;
 			}
-
-			// Füge die Richtung der Liste der besuchten Richtungen hinzu
-			visitedDirectionsByDistance
-					.computeIfAbsent(currentDistance, k -> new HashSet<>())
-					.add(direction);
 		}
 
-		// Falls keine bessere Richtung gefunden wird, wähle eine alternative Richtung
+		// Wenn keine gültige Richtung gefunden wird, prüft der Bot, ob er bereits in einer Sackgasse ist
 		if (bestDirection == null) {
-			bestDirection = findAlternativeDirection(availableDirections, directionDistances, currentDistance);
-		}
+			stuckCounter++;
+			getContext().getLog().info("Bot has attempted {} moves, but is stuck.", stuckCounter);
 
-		// Sende den Befehl zum Bewegen
-		boardRef.tell(new ChosenDirectionMessage(bestDirection, botRef));
-		recentDirections.add(bestDirection);
-		saveCurrentPosition(bestDirection); // Speichere die neue Position nach dem Schritt
+			if (stuckCounter >= maxStuckTries) {
+				// Der Bot ist in einer Sackgasse, also muss er zurückkehren
+				getContext().getLog().warn("Bot is in a deadlock after {} attempts, returning to start.", maxStuckTries);
+
+				// Berechne die Rückkehrrichtung
+				List<Direction> returnPath = calculateReturnPathToStart(); // Berechnung des Rückwegs
+
+				// Der Bot kehrt zurück
+				for (Direction returnDirection : returnPath) {
+					boardRef.tell(new ChosenDirectionMessage(returnDirection, botRef));
+					getContext().getLog().info("Bot moving back to start, step: {}", returnDirection);
+				}
+
+				// Rücksetzen der Richtungsliste und Positionen
+				recentDirections.clear();
+				visitedPositionsMap.clear();
+				visitedPositionsMap.put(new Position(0, 0, Direction.N), true); // Stelle sicher, dass der Startpunkt besucht wird
+				stuckCounter = 0;  // Zähler zurücksetzen
+			} else {
+				// Weitere Versuche, eine Richtung zu finden
+				boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
+			}
+		} else {
+			// Eine gültige Richtung gefunden, gehe dorthin
+			boardRef.tell(new ChosenDirectionMessage(bestDirection, botRef));
+			recentDirections.add(bestDirection);
+			visitedPositionsMap.put(getNewPosition(bestDirection), true);
+			stuckCounter = 0;
+		}
 
 		return this;
 	}
 
 
-	// Improved method to handle obstacles by choosing a random direction to avoid obstacles
-	private Direction findAlternativeDirection(List<Direction> availableDirections, Map<Direction, Integer> directionDistances, int currentDistance) {
-		Direction alternative = null;
-		int smallestDistance = currentDistance;
+	private Direction findBestDirection(List<Direction> availableDirections, int currentDistance) {
+		Direction bestDirection = null;
 
-		// Try finding a direction that is not visited and improves distance
-		for (Direction dir : availableDirections) {
-			int dist = directionDistances.getOrDefault(dir, currentDistance);
-			Set<Direction> visitedAtDist = visitedDirectionsByDistance.getOrDefault(dist, new HashSet<>());
-
-			if (!visitedAtDist.contains(dir) && dist < smallestDistance) {
-				alternative = dir;
-				smallestDistance = dist;
+		// Priorität auf unbesuchte Positionen legen
+		for (Direction direction : availableDirections) {
+			Position newPosition = getNewPosition(direction);
+			if (!visitedPositionsMap.containsKey(newPosition) && !newPosition.isBlocked()) {
+				bestDirection = direction;
 				break;
 			}
 		}
 
-		// If no optimal direction found, fallback to random direction
-		return (alternative != null) ? alternative : availableDirections.get(new Random().nextInt(availableDirections.size()));
-	}
-
-	// Method to track visited positions
-	private boolean hasVisitedPosition(int x, int y, Direction direction) {
-		return visitedPositions.contains(new Position(x, y, direction));
-	}
-
-	// Saves the bot's position after it moves
-	private void saveCurrentPosition(Direction direction) {
-		switch (direction) {
-			case N: currentY -= 1; break;
-			case E: currentX += 1; break;
-			case S: currentY += 1; break;
-			case W: currentX -= 1; break;
+		// Falls keine unbesuchte Position gefunden wurde, versuche eine der bekannten Richtungen
+		if (bestDirection == null) {
+			for (Direction direction : availableDirections) {
+				Position newPosition = getNewPosition(direction);
+				if (!newPosition.isBlocked()) {
+					bestDirection = direction;
+					break;
+				}
+			}
 		}
-		visitedPositions.add(new Position(currentX, currentY, direction));
+
+		return bestDirection;
 	}
 
-	// Position class to track coordinates and direction
+	private List<Direction> calculateReturnPathToStart() {
+		// Hier kann ein Algorithmus implementiert werden, um die Rückkehrrichtung zu berechnen,
+		// abhängig davon, wie der Bot auf dem Grid navigiert.
+		// Dies kann durch Rückverfolgen der Positionen und Richtungen des Bots erfolgen.
+		// Eine einfache Methode könnte es sein, die Richtungen umzukehren und in umgekehrter Reihenfolge zu bewegen.
+
+		return new ArrayList<>(recentDirections);  // Beispiel: Rückkehr in umgekehrter Reihenfolge
+	}
+
+	// Füge eine neue Map hinzu, um blockierte Positionen zu verfolgen
+	private Set<Position> blockedPositions = new HashSet<>();
+
+	// In der Position Klasse könnte eine Methode hinzugefügt werden, um festzustellen, ob sie blockiert ist
 	class Position {
 		int x, y;
 		Direction direction;
@@ -238,168 +268,84 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 		public int hashCode() {
 			return Objects.hash(x, y, direction);
 		}
-	}
 
-	// Simulate the distance change after a move
-	private int simulateDistanceAfterMove(Direction direction, int currentDistance) {
-		switch(direction) {
-			case N: return currentDistance - 1;
-			case E: return currentDistance - 1;
-			case S: return currentDistance + 1;
-			case W: return currentDistance + 1;
-			default: return currentDistance;  // Default for unexpected direction
+		// Überprüfen, ob diese Position blockiert ist
+		public boolean isBlocked() {
+			return blockedPositions.contains(this);
 		}
 	}
 
-	/*
-    private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message){
-        getContext().getLog().info("Received available directions from board {}", message.directions());
+	private Direction findFirstUnvisitedDirection(List<Direction> availableDirections) {
+		// Iteriere durch alle verfügbaren Richtungen
+		for (Direction direction : availableDirections) {
+			// Berechne die neue Position basierend auf der Richtung
+			Position newPosition = getNewPosition(direction);
 
-        List<Direction> directionList = message.directions();
-        this.moveCount++;
+			// Wenn die Position noch nicht besucht wurde, gib die Richtung zurück
+			if (!visitedPositionsMap.containsKey(newPosition)) {
+				return direction;
+			}
+		}
+		return null;  // Wenn keine unbesuchte Richtung gefunden wird, gib null zurück
+	}
 
+	private boolean allFieldsVisited() {
+		// Logik, um zu prüfen, ob alle Felder besucht wurden
+		return unvisitedPositions.isEmpty();
+	}
 
-        // first move of the game
-        if(this.currentPhase == Phase.READY){
+	private void saveCurrentPosition(Direction direction) {
+		// Aktualisiere die Position und entferne sie aus der Liste der unbesuchten Felder
+		Position currentPosition = new Position(currentX, currentY, direction);
+		visitedPositions.add(currentPosition);
+		unvisitedPositions.remove(currentPosition);
 
-            List<Direction> root = new ArrayList<>();
-            root.add(Direction.N);
-            root.add(Direction.S);
-            root.add(Direction.W);
-            root.add(Direction.E);
+		// Nach jeder Bewegung die aktuelle Position des Bots aktualisieren
+		switch (direction) {
+			case N: currentY -= 1; break;
+			case E: currentX += 1; break;
+			case S: currentY += 1; break;
+			case W: currentX -= 1; break;
+		}
+	}
 
-            // first move is a random move from directionList
-            int random = new Random().nextInt(root.size());
-            //boardRef.tell(new ChosenDirectionMessage(root.get(random), this.botRef));
-            boardRef.tell(new ChosenDirectionMessage(Direction.E, this.botRef));
+	// Returns the position based on the current direction
+	private Position getNewPosition(Direction direction) {
+		int newX = currentX;
+		int newY = currentY;
 
+		switch (direction) {
+			case N: newY -= 1; break;
+			case E: newX += 1; break;
+			case S: newY += 1; break;
+			case W: newX -= 1; break;
+		}
 
+		return new Position(newX, newY, direction);
+	}
 
-            // save played direction && distanceToTarget
-            //this.recentDirections.add(root.get(random));
-            this.recentDirections.add(Direction.E);
-            // change phase to playing
-            this.currentPhase = Phase.PLAYING;
-            getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
-        }
+	// Helper method to calculate direction towards a given position
+	private Direction calculateDirectionToPosition(Position targetPosition) {
+		// Determine the relative direction to move towards the target position
+		int deltaX = targetPosition.x - currentX;
+		int deltaY = targetPosition.y - currentY;
 
-        else if (avoiding) {
-
-            // adjust path since it had to avoid collision
-            Direction nextDirection;
-            if(avoidTurn == 0){
-                nextDirection = getTurnDirection(this.avoidDirection,1);
-            }else{
-                nextDirection = getTurnDirection(this.avoidDirection, 0);
-            }
-
-            if(lookIfMovePossible(directionList, nextDirection)){
-                boardRef.tell(new ChosenDirectionMessage(nextDirection, this.botRef));
-                avoiding = false;
-            }else{
-                System.out.println("two objects next to each other");
-            }
-
-
-        } else{
-
-            //calculating optimal direction
-
-            // distance to target is smaller now --> play same move again
-            if(recentDistances.getLast()> message.distance()){
-
-                boolean possible = lookIfMovePossible(directionList, recentDirections.getLast());
-                // look if possible to play same move again
-                if(possible){
-                    boardRef.tell(new ChosenDirectionMessage(recentDirections.getLast(), this.botRef));
-                    this.recentDirections.add(recentDirections.getLast());
-                }else{
-
-                    // avoiding obstacle
-
-
-                    Direction lastDirection = this.recentDirections.getLast();
-
-                    while(!possible){
-                        //int random = new Random().nextInt(0,2);
-                        int random = 0;
-
-                        // random for choosing left or right to avoid wall
-                        possible = lookIfMovePossible(directionList, getTurnDirection(lastDirection,random));
-                        if(possible){
-                            boardRef.tell(new ChosenDirectionMessage(getTurnDirection(lastDirection,random), this.botRef));
-                            this.avoidTurn = random;
-                            this.avoidDirection = getTurnDirection(lastDirection,random);
-                            this.avoiding = true;
-                        }else{
-                            this.getContext().getLog().info("Could not move out of the way");
-                            // try rotating again until move is possible
-                            lastDirection = getTurnDirection(lastDirection, random);
-                        }
-                    }
-
-                }
-                // TODO: else try other move
-
-
-
-
-                // distance to target is bigger now --> play opposite move
-            } else if (recentDistances.getLast()< message.distance()) {
-
-                if(lookIfMovePossible(directionList, getTurnDirection(recentDirections.getLast(), 2))){
-                    boardRef.tell(new ChosenDirectionMessage(getTurnDirection(recentDirections.getLast(), 2), this.botRef));
-                    this.recentDirections.add(getTurnDirection(recentDirections.getLast(), 2));
-                }
-                // TODO: else try other move
-
-                // distance is equal play left or right (random)
-            }else if (recentDistances.getLast()== message.distance()){
-
-                int random = new Random().nextInt(0,2);
-
-                if(lookIfMovePossible(directionList, getTurnDirection(recentDirections.getLast(), random))){
-                    boardRef.tell(new ChosenDirectionMessage(getTurnDirection(recentDirections.getLast(), random), this.botRef));
-                    this.recentDirections.add(getTurnDirection(recentDirections.getLast(), random));
-                }
-                // TODO: else try other move
-
-            }
-        }
-        this.recentDistances.add(message.distance());
-        return this;
-    }
-	*/
-
-    private Direction getTurnDirection(Direction direction, int index){
-
-        // turn index:
-        // 0 = left
-        // 1 = right
-        // 2 = opposite
-
-
-        switch(direction){
-            case N: if(index == 0){return Direction.W;} else if (index == 1){return Direction.E;} else{return Direction.S;}
-            case S: if(index == 0){return Direction.E;} else if (index == 1){return Direction.W;} else{return Direction.N;}
-            case E: if(index == 0){return Direction.N;} else if (index == 1){return Direction.S;} else{return Direction.W;}
-            case W: if(index == 0){return Direction.S;} else if (index == 1){return Direction.N;} else{return Direction.E;}
-            case NE: if(index == 0){return Direction.NW;} else if (index == 1){return Direction.SE;} else{return Direction.NW;}
-            case NW: if(index == 0){return Direction.SW;} else if (index == 1){return Direction.NE;} else{return Direction.SE;}
-            case SE: if(index == 0){return Direction.NE;} else if (index == 1){return Direction.SW;} else{return Direction.NW;}
-            case SW: if(index == 0){return Direction.SE;} else if (index == 1){return Direction.NW;} else{return Direction.NE;}
-            default: throw new IllegalArgumentException("Unknown direction: " + this);
-        }
-
-    }
-
-    private boolean lookIfMovePossible(List<Direction> directionList, Direction direction){
-        if(directionList.contains(direction)){
-            return true;
-        }else{
-            return false;
-        }
-    }
+		if (Math.abs(deltaX) > Math.abs(deltaY)) {
+			// Horizontal movement (left or right)
+			if (deltaX > 0) {
+				return Direction.E;
+			} else {
+				return Direction.W;
+			}
+		} else {
+			// Vertical movement (up or down)
+			if (deltaY > 0) {
+				return Direction.S;
+			} else {
+				return Direction.N;
+			}
+		}
+	}
 
     private Behavior<Message> onSetup(SetupMessage setupMessage){
         this.currentPhase = Phase.READY;
