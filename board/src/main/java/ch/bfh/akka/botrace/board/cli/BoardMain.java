@@ -39,7 +39,7 @@ public class BoardMain implements BoardUpdateListener {
 
     public static void main(String[] args) throws IOException {
         String boardChoiceShortcut = "";
-        int boardChoice = 6; // Assume this is the board choice logic
+        int boardChoice = 3; // Assume this is the board choice logic
         boardChoiceShortcut = switch (boardChoice) {
             case 1 -> "board1.txt";
             case 2 -> "board2.txt";
@@ -182,7 +182,7 @@ public class BoardMain implements BoardUpdateListener {
     public void boardUpdated() {
         displayBoard();// Call the display function whenever an update is notified
         try {
-            Thread.sleep(500);
+            Thread.sleep(50);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

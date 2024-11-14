@@ -18,9 +18,7 @@ import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * The root actor of the Bot actor system.
@@ -123,6 +121,137 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         };
     }
 
+	// BotRoot.java
+
+	private Set<Position> visitedPositions = new HashSet<>();
+	private Map<Integer, Set<Direction>> visitedDirectionsByDistance = new HashMap<>();
+	private int currentX = 0; // Start at position (0, 0)
+	private int currentY = 0; // Start at position (0, 0)
+
+	private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message) {
+		getContext().getLog().info("Received available directions from board {}", message.directions());
+		List<Direction> availableDirections = message.directions();
+		int currentDistance = message.distance();
+
+		// Wenn keine Richtung verfügbar ist, ist der Bot wahrscheinlich blockiert.
+		if (availableDirections.isEmpty()) {
+			getContext().getLog().info("No available directions. Bot is stuck!");
+			return this;
+		}
+
+		Direction bestDirection = null;
+		int smallestDistance = currentDistance;
+		Map<Direction, Integer> directionDistances = new HashMap<>();
+
+		// Berechne die Distanz nach jedem möglichen Schritt
+		for (Direction direction : availableDirections) {
+			int newDistance = simulateDistanceAfterMove(direction, currentDistance);
+
+			// Vermeide Richtungen, die den Bot in bereits besuchte Positionen führen
+			if (hasVisitedPosition(currentX, currentY, direction)) {
+				continue;
+			}
+
+			// Wähle die Richtung mit der kürzesten Distanz zum Ziel
+			if (newDistance < smallestDistance) {
+				smallestDistance = newDistance;
+				bestDirection = direction;
+			}
+
+			// Füge die Richtung der Liste der besuchten Richtungen hinzu
+			visitedDirectionsByDistance
+					.computeIfAbsent(currentDistance, k -> new HashSet<>())
+					.add(direction);
+		}
+
+		// Falls keine bessere Richtung gefunden wird, wähle eine alternative Richtung
+		if (bestDirection == null) {
+			bestDirection = findAlternativeDirection(availableDirections, directionDistances, currentDistance);
+		}
+
+		// Sende den Befehl zum Bewegen
+		boardRef.tell(new ChosenDirectionMessage(bestDirection, botRef));
+		recentDirections.add(bestDirection);
+		saveCurrentPosition(bestDirection); // Speichere die neue Position nach dem Schritt
+
+		return this;
+	}
+
+
+	// Improved method to handle obstacles by choosing a random direction to avoid obstacles
+	private Direction findAlternativeDirection(List<Direction> availableDirections, Map<Direction, Integer> directionDistances, int currentDistance) {
+		Direction alternative = null;
+		int smallestDistance = currentDistance;
+
+		// Try finding a direction that is not visited and improves distance
+		for (Direction dir : availableDirections) {
+			int dist = directionDistances.getOrDefault(dir, currentDistance);
+			Set<Direction> visitedAtDist = visitedDirectionsByDistance.getOrDefault(dist, new HashSet<>());
+
+			if (!visitedAtDist.contains(dir) && dist < smallestDistance) {
+				alternative = dir;
+				smallestDistance = dist;
+				break;
+			}
+		}
+
+		// If no optimal direction found, fallback to random direction
+		return (alternative != null) ? alternative : availableDirections.get(new Random().nextInt(availableDirections.size()));
+	}
+
+	// Method to track visited positions
+	private boolean hasVisitedPosition(int x, int y, Direction direction) {
+		return visitedPositions.contains(new Position(x, y, direction));
+	}
+
+	// Saves the bot's position after it moves
+	private void saveCurrentPosition(Direction direction) {
+		switch (direction) {
+			case N: currentY -= 1; break;
+			case E: currentX += 1; break;
+			case S: currentY += 1; break;
+			case W: currentX -= 1; break;
+		}
+		visitedPositions.add(new Position(currentX, currentY, direction));
+	}
+
+	// Position class to track coordinates and direction
+	class Position {
+		int x, y;
+		Direction direction;
+
+		public Position(int x, int y, Direction direction) {
+			this.x = x;
+			this.y = y;
+			this.direction = direction;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) return true;
+			if (obj == null || getClass() != obj.getClass()) return false;
+			Position position = (Position) obj;
+			return x == position.x && y == position.y && direction == position.direction;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(x, y, direction);
+		}
+	}
+
+	// Simulate the distance change after a move
+	private int simulateDistanceAfterMove(Direction direction, int currentDistance) {
+		switch(direction) {
+			case N: return currentDistance - 1;
+			case E: return currentDistance - 1;
+			case S: return currentDistance + 1;
+			case W: return currentDistance + 1;
+			default: return currentDistance;  // Default for unexpected direction
+		}
+	}
+
+	/*
     private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message){
         getContext().getLog().info("Received available directions from board {}", message.directions());
 
@@ -240,6 +369,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         this.recentDistances.add(message.distance());
         return this;
     }
+	*/
 
     private Direction getTurnDirection(Direction direction, int index){
 
