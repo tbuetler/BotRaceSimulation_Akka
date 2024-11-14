@@ -39,13 +39,14 @@ public class BoardMain implements BoardUpdateListener {
 
     public static void main(String[] args) throws IOException {
         String boardChoiceShortcut = "";
-        int boardChoice = 1; // Assume this is the board choice logic
+        int boardChoice = 6; // Assume this is the board choice logic
         boardChoiceShortcut = switch (boardChoice) {
             case 1 -> "board1.txt";
             case 2 -> "board2.txt";
             case 3 -> "board3.txt";
             case 4 -> "board4.txt";
             case 5 -> "board5.txt";
+            case 6 -> "board6.txt";
             default -> "board1.txt";
         };
 

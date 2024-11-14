@@ -71,7 +71,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
         this.moveCount = 0;
         this.currentPhase = Phase.REGISTERING;
-        this.recentDistances = new ArrayList<>();
         // TODO initialize the root actor...
 
         ActorRef<Listing> listingResponseAdapter = context
@@ -114,19 +113,26 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         getContext().getLog().info("Received available directions from board {}", message.directions());
 
         List<Direction> directionList = message.directions();
+        this.moveCount++;
 
 
         // first move of the game
         if(this.currentPhase == Phase.READY){
-            this.moveCount++;
+
+            List<Direction> root = new ArrayList<>();
+            root.add(Direction.N);
+            root.add(Direction.S);
+            root.add(Direction.W);
+            root.add(Direction.E);
 
             // first move is a random move from directionList
-            int random = new Random().nextInt(directionList.size());
-            boardRef.tell(new ChosenDirectionMessage(directionList.get(random), this.botRef));
+            int random = new Random().nextInt(root.size());
+            boardRef.tell(new ChosenDirectionMessage(root.get(random), this.botRef));
+
+
 
             // save played direction && distanceToTarget
             this.recentDirections.add(directionList.get(random));
-            this.recentDistances.add(message.distance());
 
             // change phase to playing
             this.currentPhase = Phase.PLAYING;
@@ -141,6 +147,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
                 // look if possible to play same move again
                 if(lookIfMovePossible(directionList, recentDirections.getLast())){
                     boardRef.tell(new ChosenDirectionMessage(recentDirections.getLast(), this.botRef));
+                    this.recentDirections.add(recentDirections.getLast());
                 }
                 // TODO: else try other move
 
@@ -150,26 +157,28 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
                 if(lookIfMovePossible(directionList, getTurnDirection(recentDirections.getLast(), 2))){
                     boardRef.tell(new ChosenDirectionMessage(getTurnDirection(recentDirections.getLast(), 2), this.botRef));
+                    this.recentDirections.add(getTurnDirection(recentDirections.getLast(), 2));
+
                 }
-
-
+                // distance is equal play left or right (random)
             }else if (recentDistances.getLast()== message.distance()){
 
+                int random = new Random().nextInt(0,2);
+
+                if(lookIfMovePossible(directionList, getTurnDirection(recentDirections.getLast(), random))){
+                    boardRef.tell(new ChosenDirectionMessage(getTurnDirection(recentDirections.getLast(), random), this.botRef));
+                    this.recentDirections.add(getTurnDirection(recentDirections.getLast(), random));
+
+                }
             }
-
-
         }
-
-
-
-
-        this.moveCount++;
-
+        this.recentDistances.add(message.distance());
         return this;
     }
 
     private Direction getTurnDirection(Direction direction, int index){
-        // index:
+
+        // turn index:
         // 0 = left
         // 1 = right
         // 2 = opposite
@@ -218,6 +227,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onTargetReached(){
         getContext().getLog().info("Bot reached target");
+        System.out.println("Bot has played"+ this.moveCount+" moves");
         boardRef.tell(new DeregisterMessage("Bot reached Target", this.botRef));
         return this;
     }

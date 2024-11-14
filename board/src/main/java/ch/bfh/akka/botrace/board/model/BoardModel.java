@@ -243,7 +243,7 @@ public class BoardModel implements Board {
         int diffRows = Math.abs(pos.row - end.row);
         int diffCols = Math.abs(pos.col - end.col);
 
-        return diffRows + diffCols;
+        return Math.max(diffCols,diffRows);
     }
 
 
