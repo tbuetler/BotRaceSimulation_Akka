@@ -82,6 +82,11 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		}
 	}
 
+	private void notifyTargetReached(String name) {
+		for (BoardUpdateListener listener : listeners) {
+			listener.notifyTargetReached(name);
+		}
+	}
 
 
 	/**
@@ -187,10 +192,11 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 			// if bot finished -> new TargetReachedMessage
 			if(boardModel.checkIfBotFinished(message.botRef())){
 				message.botRef().tell(new TargetReachedMessage());
+				notifyTargetReached(boardModel.getPlayerName().get(message.botRef()));
 				getContext().getLog().info("Target has been reached by: " + boardModel.getPlayerName().get(message.botRef()));
+			} else {
+				notifyBoardUpdate();
 			}
-
-			notifyBoardUpdate();
 		}
 		// Send ChosenDirectionIgnoredMessage if failed to play move
 		else{

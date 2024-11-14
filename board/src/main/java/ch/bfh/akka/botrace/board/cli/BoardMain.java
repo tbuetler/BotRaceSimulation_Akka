@@ -259,4 +259,14 @@ public class BoardMain implements BoardUpdateListener {
         }
         boardRef.tell(new StartRaceMessage());
     }
+
+    @Override
+    public void notifyTargetReached(String name) {
+        System.out.println("Target reached by bot: " + name);
+        gameRunning = false;
+        if (board != null) {
+            board.terminate();
+        }
+        Platform.exit();
+    }
 }
