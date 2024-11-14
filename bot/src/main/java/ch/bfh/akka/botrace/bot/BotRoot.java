@@ -37,6 +37,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     static final String TIMER_KEY = "timer";
 
     private final TimerScheduler<Message> timers;
+    private int sleepTime;
 
     /**
      * The service key instance to lookup for the service name {@link BoardService#SERVICE_NAME} of the board.
@@ -123,7 +124,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         getContext().getLog().info("Received available directions from board {}", message.directions());
         List<Direction> directionList = message.directions();
 
-        timers.startSingleTimer(TIMER_KEY, new TimerMessage(), Duration.ofSeconds(1));
+        timers.startSingleTimer(TIMER_KEY, new TimerMessage(), Duration.ofMillis(sleepTime));
 
         int random = new Random().nextInt(directionList.size());
 
@@ -135,6 +136,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onSetup(SetupMessage setupMessage){
         this.currentPhase = Phase.READY;
+        sleepTime = setupMessage.sleepTime();
         getContext().getLog().info("Bot {} got setup message", actorName);
         getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         return this;
