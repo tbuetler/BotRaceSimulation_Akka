@@ -18,6 +18,7 @@ import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -46,6 +47,17 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return Behaviors.setup(c -> new BotRoot(c, botName));
     }
 
+
+
+    private enum Phase{
+        REGISTERING, READY, PLAYING, PAUSED, TARGET_REACHED
+    }
+    private Phase currentPhase;
+    private int moveCount;
+    List<Direction> recentDirections;
+    ArrayList<Integer> recentDistances;
+
+
     /**
      * Upon creation of the Bot root actor, it tells the {@link Receptionist} its
      * interest in receiving a list of services.
@@ -54,6 +66,12 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
      */
     private BotRoot(ActorContext<Message> context, String botName) {
         super(context);
+        recentDirections = new ArrayList<>();
+        this.recentDistances = new ArrayList<>();
+
+        this.moveCount = 0;
+        this.currentPhase = Phase.REGISTERING;
+        this.recentDistances = new ArrayList<>();
         // TODO initialize the root actor...
 
         ActorRef<Listing> listingResponseAdapter = context
@@ -94,15 +112,40 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message){
         getContext().getLog().info("Received available directions from board {}", message.directions());
+
         List<Direction> directionList = message.directions();
-        int random = new Random().nextInt(directionList.size());
-        boardRef.tell(new ChosenDirectionMessage(directionList.get(random), this.botRef));
+
+
+        // first move of the game
+        if(this.currentPhase == Phase.READY){
+            this.moveCount++;
+
+            // first move is a random move from directionList
+            int random = new Random().nextInt(directionList.size());
+            boardRef.tell(new ChosenDirectionMessage(directionList.get(random), this.botRef));
+
+            // save played direction && distanceToTarget
+            this.recentDirections.add(directionList.get(random));
+            this.recentDistances.add(message.distance());
+
+            // change phase to playing
+            this.currentPhase = Phase.PLAYING;
+            getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
+
+            this.moveCount++;
+        }
+
+
+
+        this.moveCount++;
 
         return this;
     }
 
     private Behavior<Message> onSetup(SetupMessage setupMessage){
+        this.currentPhase = Phase.READY;
         getContext().getLog().info("Bot {} got setup message", actorName);
+        getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         return this;
     }
 
@@ -125,12 +168,17 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onPause(){
+        this.currentPhase = Phase.PAUSED;
         getContext().getLog().info("Game was paused");
+        getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         return this;
     }
 
     private Behavior<Message> onResume(){
+        this.currentPhase = Phase.PLAYING;
         getContext().getLog().info("Game was resumed");
+        getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
+
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
