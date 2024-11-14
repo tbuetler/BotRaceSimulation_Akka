@@ -18,6 +18,7 @@ import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -46,6 +47,16 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return Behaviors.setup(c -> new BotRoot(c, botName));
     }
 
+
+
+    private enum Phase{
+        REGISTERING, READY, PLAYING, PAUSED, TARGET_REACHED
+    }
+    private Phase currentPhase;
+    private int moveCount;
+    List<Direction> recentDirections;
+
+
     /**
      * Upon creation of the Bot root actor, it tells the {@link Receptionist} its
      * interest in receiving a list of services.
@@ -54,6 +65,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
      */
     private BotRoot(ActorContext<Message> context, String botName) {
         super(context);
+        recentDirections = new ArrayList<>();
+        this.moveCount = 0;
+        this.currentPhase = Phase.REGISTERING;
         // TODO initialize the root actor...
 
         ActorRef<Listing> listingResponseAdapter = context
@@ -96,18 +110,24 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         getContext().getLog().info("Received available directions from board {}", message.directions());
         List<Direction> directionList = message.directions();
         int random = new Random().nextInt(directionList.size());
+
+        this.moveCount++;
         boardRef.tell(new ChosenDirectionMessage(directionList.get(random), this.botRef));
 
         return this;
     }
 
     private Behavior<Message> onSetup(SetupMessage setupMessage){
+        this.currentPhase = Phase.READY;
         getContext().getLog().info("Bot {} got setup message", actorName);
+        getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         return this;
     }
 
     private Behavior<Message> onStart(){
+        this.currentPhase = Phase.PLAYING;
         getContext().getLog().info("Bot {} got start message", actorName);
+        getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
@@ -125,12 +145,17 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onPause(){
+        this.currentPhase = Phase.PAUSED;
         getContext().getLog().info("Game was paused");
+        getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         return this;
     }
 
     private Behavior<Message> onResume(){
+        this.currentPhase = Phase.PLAYING;
         getContext().getLog().info("Game was resumed");
+        getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
+
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
