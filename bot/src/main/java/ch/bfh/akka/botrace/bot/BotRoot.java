@@ -186,12 +186,15 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
                     this.recentDirections.add(recentDirections.getLast());
                 }else{
 
+                    // avoiding obstacle
+
 
                     Direction lastDirection = this.recentDirections.getLast();
 
-                    // avoiding obstacle
-                    while(possible){
-                        int random = new Random().nextInt(0,2);
+                    while(!possible){
+                        //int random = new Random().nextInt(0,2);
+                        int random = 0;
+
                         // random for choosing left or right to avoid wall
                         possible = lookIfMovePossible(directionList, getTurnDirection(lastDirection,random));
                         if(possible){
@@ -200,6 +203,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
                             this.avoidDirection = getTurnDirection(lastDirection,random);
                             this.avoiding = true;
                         }else{
+                            this.getContext().getLog().info("Could not move out of the way");
                             // try rotating again until move is possible
                             lastDirection = getTurnDirection(lastDirection, random);
                         }
