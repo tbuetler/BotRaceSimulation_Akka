@@ -131,15 +131,70 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
             // change phase to playing
             this.currentPhase = Phase.PLAYING;
             getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
+        }else{
 
-            this.moveCount++;
+            //calculating optimal direction
+
+            // distance to target is smaller now --> play same move again
+            if(recentDistances.getLast()> message.distance()){
+
+                // look if possible to play same move again
+                if(lookIfMovePossible(directionList, recentDirections.getLast())){
+                    boardRef.tell(new ChosenDirectionMessage(recentDirections.getLast(), this.botRef));
+                }
+                // TODO: else try other move
+
+
+                // distance to target is bigger now --> play opposite move
+            } else if (recentDistances.getLast()< message.distance()) {
+
+                if(lookIfMovePossible(directionList, getTurnDirection(recentDirections.getLast(), 2))){
+                    boardRef.tell(new ChosenDirectionMessage(getTurnDirection(recentDirections.getLast(), 2), this.botRef));
+                }
+
+
+            }else if (recentDistances.getLast()== message.distance()){
+
+            }
+
+
         }
+
 
 
 
         this.moveCount++;
 
         return this;
+    }
+
+    private Direction getTurnDirection(Direction direction, int index){
+        // index:
+        // 0 = left
+        // 1 = right
+        // 2 = opposite
+
+
+        switch(direction){
+            case N: if(index == 0){return Direction.W;} else if (index == 1){return Direction.E;} else{return Direction.S;}
+            case S: if(index == 0){return Direction.E;} else if (index == 1){return Direction.W;} else{return Direction.N;}
+            case E: if(index == 0){return Direction.N;} else if (index == 1){return Direction.S;} else{return Direction.W;}
+            case W: if(index == 0){return Direction.S;} else if (index == 1){return Direction.N;} else{return Direction.E;}
+            case NE: if(index == 0){return Direction.NW;} else if (index == 1){return Direction.SE;} else{return Direction.NW;}
+            case NW: if(index == 0){return Direction.SW;} else if (index == 1){return Direction.NE;} else{return Direction.SE;}
+            case SE: if(index == 0){return Direction.NE;} else if (index == 1){return Direction.SW;} else{return Direction.NW;}
+            case SW: if(index == 0){return Direction.SE;} else if (index == 1){return Direction.NW;} else{return Direction.NE;}
+            default: throw new IllegalArgumentException("Unknown direction: " + this);
+        }
+
+    }
+
+    private boolean lookIfMovePossible(List<Direction> directionList, Direction direction){
+        if(directionList.contains(direction)){
+            return true;
+        }else{
+            return false;
+        }
     }
 
     private Behavior<Message> onSetup(SetupMessage setupMessage){
