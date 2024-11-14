@@ -11,12 +11,14 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.board.model.BoardModel;
+import ch.bfh.akka.botrace.board.model.BoardUpdateListener;
 import ch.bfh.akka.botrace.common.BoardService;
 import ch.bfh.akka.botrace.common.Direction;
 import ch.bfh.akka.botrace.common.Message;
 import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -66,6 +68,21 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 	 */
 
 
+	private List<BoardUpdateListener> listeners = new ArrayList<>();
+
+	// Register a listener
+	public void addBoardUpdateListener(BoardUpdateListener listener) {
+		listeners.add(listener);
+	}
+
+	// Notify all listeners of an update
+	public void notifyBoardUpdate() {
+		for (BoardUpdateListener listener : listeners) {
+			listener.boardUpdated();
+		}
+	}
+
+
 
 	/**
 	 * Handles the received messages.
@@ -108,7 +125,6 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		for(ActorRef<Message> ref : boardModel.getBots()){
 			ref.tell(new ResumeMessage());
 		}
-
 		return this;
 	}
 
@@ -173,6 +189,8 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 				message.botRef().tell(new TargetReachedMessage());
 				getContext().getLog().info("Target has been reached by: " + boardModel.getPlayerName().get(message.botRef()));
 			}
+
+			notifyBoardUpdate();
 		}
 		// Send ChosenDirectionIgnoredMessage if failed to play move
 		else{
