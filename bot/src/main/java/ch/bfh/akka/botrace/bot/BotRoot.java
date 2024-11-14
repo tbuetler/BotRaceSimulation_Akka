@@ -89,25 +89,30 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
      * @param message a message
      * @return the same behavior
      */
-    @Override
-    public Behavior<Message> onMessage(Message message) {
+	@Override
+	public Behavior<Message> onMessage(Message message) {
+		if (currentPhase == Phase.TARGET_REACHED) {
+			// Stop further processing of messages once the target is reached
+			return this;
+		}
 
-        return switch(message){
-            case PingMessage ignored                                                   -> onPing();
-            case SetupMessage setupMessage                                             -> onSetup(setupMessage);
-            case StartMessage ignored                                                  -> onStart();
-            case AvailableDirectionsReplyMessage availableDirectionsReplyMessage       -> onAvailableDirectionsReply(availableDirectionsReplyMessage);
-            case ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage           -> onChosenDirectionIgnored(chosenDirectionIgnoredMessage);
-            case TargetReachedMessage ignored                                          -> onTargetReached();
-            case PauseMessage ignored                                                  -> onPause();
-            case ResumeMessage ignored                                                 -> onResume();
-            case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
-            case UnregisteredMessage ignored                                           -> onUnregister();
-            case UnexpectedMessage unexpectedMessage                                   -> onUnexpectedMessage(unexpectedMessage);
+		// Weiter mit der normalen Verarbeitung der Nachrichten
+		return switch(message){
+			case PingMessage ignored -> onPing();
+			case SetupMessage setupMessage -> onSetup(setupMessage);
+			case StartMessage ignored -> onStart();
+			case AvailableDirectionsReplyMessage availableDirectionsReplyMessage -> onAvailableDirectionsReply(availableDirectionsReplyMessage);
+			case ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage -> onChosenDirectionIgnored(chosenDirectionIgnoredMessage);
+			case TargetReachedMessage ignored -> onTargetReached();
+			case PauseMessage ignored -> onPause();
+			case ResumeMessage ignored -> onResume();
+			case ListingResponse listingResponse -> onListingResponse(listingResponse);
+			case UnregisteredMessage ignored -> onUnregister();
+			case UnexpectedMessage unexpectedMessage -> onUnexpectedMessage(unexpectedMessage);
 
-            default -> throw new IllegalStateException("Unexpected value: " + message);
-        };
-    }
+			default -> throw new IllegalStateException("Unexpected value: " + message);
+		};
+	}
 
 	// BotRoot.java
 	private Map<Integer, Set<Direction>> visitedDirectionsByDistance = new HashMap<>();
@@ -124,6 +129,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 		getContext().getLog().info("Received available directions from board {}", message.directions());
 		List<Direction> availableDirections = message.directions();
 		int currentDistance = message.distance();
+		int moveCount = 0;
 
 		// Wenn der Bot keine Richtung mehr wählen kann
 		if (availableDirections.isEmpty()) {
@@ -133,14 +139,8 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
 		// wenn das ziel neben dem bot ist soll er darauf zu gehen
 		if (currentDistance == 1) {
-			Direction firstUnvisitedDirection = findFirstUnvisitedDirection(availableDirections);
-			if (firstUnvisitedDirection != null) {
-				boardRef.tell(new ChosenDirectionMessage(firstUnvisitedDirection, botRef));
-				recentDirections.add(firstUnvisitedDirection);
-				Position firstPosition = getNewPosition(firstUnvisitedDirection);
-				visitedPositionsMap.put(firstPosition, true);
-				stuckCounter = 0;
-			}
+			boardRef.tell(new ChosenDirectionMessage(availableDirections.get(0), botRef));
+			moveCount++;
 			return this;
 		}
 
@@ -204,33 +204,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 		}
 
 		return this;
-	}
-
-
-	private Direction findBestDirection(List<Direction> availableDirections, int currentDistance) {
-		Direction bestDirection = null;
-
-		// Priorität auf unbesuchte Positionen legen
-		for (Direction direction : availableDirections) {
-			Position newPosition = getNewPosition(direction);
-			if (!visitedPositionsMap.containsKey(newPosition) && !newPosition.isBlocked()) {
-				bestDirection = direction;
-				break;
-			}
-		}
-
-		// Falls keine unbesuchte Position gefunden wurde, versuche eine der bekannten Richtungen
-		if (bestDirection == null) {
-			for (Direction direction : availableDirections) {
-				Position newPosition = getNewPosition(direction);
-				if (!newPosition.isBlocked()) {
-					bestDirection = direction;
-					break;
-				}
-			}
-		}
-
-		return bestDirection;
 	}
 
 	private List<Direction> calculateReturnPathToStart() {
@@ -366,12 +339,15 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         return this;
     }
 
-    private Behavior<Message> onTargetReached(){
-        getContext().getLog().info("Bot reached target");
-        System.out.println("Bot has played"+ this.moveCount+" moves");
-        boardRef.tell(new DeregisterMessage("Bot reached Target", this.botRef));
-        return this;
-    }
+	private Behavior<Message> onTargetReached() {
+		getContext().getLog().info("Bot {} reached target", actorName);
+		System.out.println("Bot has played " + this.moveCount + " moves");
+		boardRef.tell(new DeregisterMessage("Bot reached Target", this.botRef));
+		this.currentPhase = Phase.TARGET_REACHED;
+		getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
+		return this;
+	}
+
 
     private Behavior<Message> onPause(){
         this.currentPhase = Phase.PAUSED;
