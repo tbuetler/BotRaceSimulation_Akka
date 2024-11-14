@@ -132,7 +132,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
 
             // save played direction && distanceToTarget
-            this.recentDirections.add(directionList.get(random));
+            this.recentDirections.add(root.get(random));
 
             // change phase to playing
             this.currentPhase = Phase.PLAYING;
