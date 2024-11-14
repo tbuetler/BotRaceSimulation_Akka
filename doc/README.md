@@ -292,18 +292,32 @@ decisions of your bot.
 > Overall experience  
 > Git commit analytics
 
+> **Note:** Enhanced and grammar checked with chatGPT / deepl.com
+
 **Gil**\
-BlaBla
+This project allowed me to enhance my understanding of distributed systems, specifically with Akka's actor-based
+approach. I was involved in designing the board actor system, focusing on message handling between the bots and the
+board. This project highlighted the importance of effective communication between team members, as well as a deep
+understanding of concurrent programming concepts. I found it challenging yet rewarding to design the message protocols
+and ensure consistent state transitions in the system.
 
 **Martin**\
-BlaBla
+Working on the bot race game gave me the opportunity to develop my skills in pathfinding and algorithm design. I worked
+closely on the bot’s movement logic, implementing strategies to detect and avoid dead-ends, which involved understanding
+how to track previously visited positions and apply memory-based movement to optimize navigation. This experience
+improved my problem-solving abilities, especially in debugging movement paths and refining the bot’s efficiency within
+the grid.
 
 **Pablo**\
-BlaBla
+In this project, I was able to apply and expand my knowledge of distributed systems using the Akka framework. My role
+primarily focused on error handling and optimizing the board’s response times to bot requests. Working on exception
+management and error-case scenarios taught me a lot about resilience in distributed applications, which are critical
+when multiple actors interact. Additionally, I took part in debugging the actor interactions, which strengthened my
+understanding of concurrency and synchronization in Java.
 
 **Tim**\
-Utilized Git and GitHub for version control, which was a new experience for me. I learned how to work with branches,
-pull requests, and merge requests, which was a valuable skill to acquire.
-Took over a part of the GUI of the project, which was a challenging but rewarding experience. We had to design and
-implement
-the UI without a pre-defined layout, which forced us to think creatively and come up with our own solution.
+Using Git and GitHub for version control was a new and valuable experience for me. I learned to manage branches, submit
+pull requests, and resolve merge conflicts, which improved my workflow. I also took on part of the GUI design for this
+project, which presented a unique challenge. With no predefined layout, I had to be creative and develop a user
+interface that not only presented information clearly but also interacted effectively with the backend. This experience
+taught me a lot about UI design principles and integration with backend systems.
