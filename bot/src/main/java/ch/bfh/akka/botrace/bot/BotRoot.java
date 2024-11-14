@@ -34,6 +34,7 @@ import java.util.Timer;
 public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian actor
 
     public record TimerMessage() implements Message { }
+    static final String TIMER_KEY = "timer";
 
     private final TimerScheduler<Message> timers;
 
@@ -122,7 +123,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         getContext().getLog().info("Received available directions from board {}", message.directions());
         List<Direction> directionList = message.directions();
 
-        timers.startSingleTimer(new TimerMessage(), Duration.ofSeconds(1));
+        timers.startSingleTimer(TIMER_KEY, new TimerMessage(), Duration.ofSeconds(1));
 
         int random = new Random().nextInt(directionList.size());
 
@@ -161,6 +162,8 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onPause(){
         this.currentPhase = Phase.PAUSED;
+        timers.cancel(TIMER_KEY);
+        getContext().getLog().info("Timer was stopped");
         getContext().getLog().info("Game was paused");
         getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         return this;
@@ -168,6 +171,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onResume(){
         this.currentPhase = Phase.PLAYING;
+
         getContext().getLog().info("Game was resumed");
         getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
 
@@ -208,7 +212,14 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     }
 
     private Behavior<Message> onTimerMessage() {
-        boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
+        if(this.currentPhase == Phase.PLAYING){
+            boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
+            getContext().getLog().info("Timer triggered a request");
+        }
+        else {
+            timers.cancel(TIMER_KEY);
+            getContext().getLog().info("Timer was stopped");
+        }
         return this;
     }
 }
