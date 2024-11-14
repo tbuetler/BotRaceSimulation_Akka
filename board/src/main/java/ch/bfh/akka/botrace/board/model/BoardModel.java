@@ -233,6 +233,7 @@ public class BoardModel implements Board {
     public void deregister(ActorRef<Message> botRef) {
         playerPosition.remove(botRef);
         playerName.remove(botRef);
+        bots.remove(botRef);
     }
 
 
