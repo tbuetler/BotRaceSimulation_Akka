@@ -115,7 +115,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 	}
 
 	// BotRoot.java
-	private Map<Integer, Set<Direction>> visitedDirectionsByDistance = new HashMap<>();
 	private int currentX = 0; // Start at position (0, 0)
 	private int currentY = 0; // Start at position (0, 0)
 	private int stuckCounter = 0;  // Zähler für Rückkehrversuche
@@ -129,7 +128,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 		getContext().getLog().info("Received available directions from board {}", message.directions());
 		List<Direction> availableDirections = message.directions();
 		int currentDistance = message.distance();
-		int moveCount = 0;
+		moveCount++;
 
 		// Wenn der Bot keine Richtung mehr wählen kann
 		if (availableDirections.isEmpty()) {
@@ -140,7 +139,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 		// wenn das ziel neben dem bot ist soll er darauf zu gehen
 		if (currentDistance == 1) {
 			boardRef.tell(new ChosenDirectionMessage(availableDirections.get(0), botRef));
-			moveCount++;
 			return this;
 		}
 
