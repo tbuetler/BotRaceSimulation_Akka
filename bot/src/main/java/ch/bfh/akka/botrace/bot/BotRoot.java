@@ -114,16 +114,16 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 		};
 	}
 
-	// BotRoot.java
-	private int currentX = 0; // Start at position (0, 0)
-	private int currentY = 0; // Start at position (0, 0)
-	private int stuckCounter = 0;  // Zähler für Rückkehrversuche
-	private int maxStuckTries = 5;  // Maximalanzahl der Versuche, bevor der Bot zurückgeht
-	private Set<Position> visitedPositions = new HashSet<>(); // Gespeicherte besuchte Positionen
-	private Set<Position> unvisitedPositions = new HashSet<>();  // Unbesuchte Positionen
-	private Map<Position, Boolean> visitedPositionsMap = new HashMap<>();
+	// Track bot's current position (initialized at the start)
+	private int currentX = 0;
+	private int currentY = 0;
+	private int stuckCounter = 0;  // Counter for tracking consecutive dead-ends
+	private int maxStuckTries = 5;  // Maximum attempts to avoid dead-ends before returning to start
+	private Set<Position> visitedPositions = new HashSet<>(); // Track visited positions
+	private Set<Position> unvisitedPositions = new HashSet<>();  // Track unvisited positions
+	private Map<Position, Boolean> visitedPositionsMap = new HashMap<>(); // Map to track blocked/unblocked positions
 
-	// Logik zur Vermeidung von Sackgassen und Wiederverwendung von unbesuchten Positionen
+	// Handles bot's movement decisions, including dead-end avoidance
 	private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message) {
 		getContext().getLog().info("Received available directions from board {}", message.directions());
 		List<Direction> availableDirections = message.directions();
@@ -136,13 +136,18 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 			return this;
 		}
 
-		// wenn das ziel neben dem bot ist soll er darauf zu gehen
+		// Move towards target if it is one step away
 		if (currentDistance == 1) {
 			boardRef.tell(new ChosenDirectionMessage(availableDirections.get(0), botRef));
 			return this;
 		}
 
-		// Wenn der Bot feststellt, dass er nicht weiterkommt
+		// Stop if target reached
+		if (currentDistance == 0) {
+			return this;
+		}
+
+		// Bot checks for unvisited directions if it's at a dead-end
 		if (recentDirections.isEmpty()) {
 			Direction firstUnvisitedDirection = findFirstUnvisitedDirection(availableDirections);
 			if (firstUnvisitedDirection != null) {
@@ -155,46 +160,46 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 			return this;
 		}
 
-		// Wenn der Bot keine unbesuchte Richtung findet, prüft er, ob er in einer Sackgasse steckt
+		// Find the best unblocked direction
 		Direction bestDirection = null;
 		for (Direction direction : availableDirections) {
 			Position newPosition = getNewPosition(direction);
-			// Überprüfen, ob die Position blockiert ist
+			// Ensure position is not blocked
 			if (!visitedPositionsMap.containsKey(newPosition) && !newPosition.isBlocked()) {
 				bestDirection = direction;
 				break;
 			}
 		}
 
-		// Wenn keine gültige Richtung gefunden wird, prüft der Bot, ob er bereits in einer Sackgasse ist
+		// Check if bot is in a deadlock situation
 		if (bestDirection == null) {
 			stuckCounter++;
 			getContext().getLog().info("Bot has attempted {} moves, but is stuck.", stuckCounter);
 
+			// If max attempts reached, return to start
 			if (stuckCounter >= maxStuckTries) {
-				// Der Bot ist in einer Sackgasse, also muss er zurückkehren
 				getContext().getLog().warn("Bot is in a deadlock after {} attempts, returning to start.", maxStuckTries);
 
-				// Berechne die Rückkehrrichtung
-				List<Direction> returnPath = calculateReturnPathToStart(); // Berechnung des Rückwegs
+				// Calculate return path
+				List<Direction> returnPath = calculateReturnPathToStart();
 
-				// Der Bot kehrt zurück
+				// Bot returns to start following calculated path
 				for (Direction returnDirection : returnPath) {
 					boardRef.tell(new ChosenDirectionMessage(returnDirection, botRef));
 					getContext().getLog().info("Bot moving back to start, step: {}", returnDirection);
 				}
 
-				// Rücksetzen der Richtungsliste und Positionen
+				// Reset tracking variables
 				recentDirections.clear();
 				visitedPositionsMap.clear();
-				visitedPositionsMap.put(new Position(0, 0, Direction.N), true); // Stelle sicher, dass der Startpunkt besucht wird
-				stuckCounter = 0;  // Zähler zurücksetzen
+				visitedPositionsMap.put(new Position(0, 0, Direction.N), true);
+				stuckCounter = 0;
 			} else {
-				// Weitere Versuche, eine Richtung zu finden
+				// Continue searching for alternative directions
 				boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
 			}
 		} else {
-			// Eine gültige Richtung gefunden, gehe dorthin
+			// Proceed in best found direction
 			boardRef.tell(new ChosenDirectionMessage(bestDirection, botRef));
 			recentDirections.add(bestDirection);
 			visitedPositionsMap.put(getNewPosition(bestDirection), true);
@@ -205,15 +210,11 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 	}
 
 	private List<Direction> calculateReturnPathToStart() {
-		// Hier kann ein Algorithmus implementiert werden, um die Rückkehrrichtung zu berechnen,
-		// abhängig davon, wie der Bot auf dem Grid navigiert.
-		// Dies kann durch Rückverfolgen der Positionen und Richtungen des Bots erfolgen.
-		// Eine einfache Methode könnte es sein, die Richtungen umzukehren und in umgekehrter Reihenfolge zu bewegen.
-
-		return new ArrayList<>(recentDirections);  // Beispiel: Rückkehr in umgekehrter Reihenfolge
+		// Logic for calculating the return path to the starting point.
+		return new ArrayList<>(recentDirections);  // Example: Returning in reverse order
 	}
 
-	// Füge eine neue Map hinzu, um blockierte Positionen zu verfolgen
+	// Map to track blocked positions
 	private Set<Position> blockedPositions = new HashSet<>();
 
 	// In der Position Klasse könnte eine Methode hinzugefügt werden, um festzustellen, ob sie blockiert ist
