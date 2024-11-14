@@ -8,6 +8,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractOnMessageBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.TimerScheduler;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.Receptionist.Listing;
 import akka.actor.typed.receptionist.ServiceKey;
@@ -18,12 +19,26 @@ import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.boardmessage.PingMessage;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.Timer;
 import java.util.*;
 
 /**
  * The root actor of the Bot actor system.
  */
+
+
+
 public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian actor
+
+    public record TimerMessage() implements Message { }
+    static final String TIMER_KEY = "timer";
+
+    private final TimerScheduler<Message> timers;
+    private int sleepTime;
 
     /**
      * The service key instance to lookup for the service name {@link BoardService#SERVICE_NAME} of the board.
@@ -42,7 +57,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
      * @return a behavior.
      */
     public static Behavior<Message> create(String botName) {
-        return Behaviors.setup(c -> new BotRoot(c, botName));
+        return Behaviors.setup(ctx -> Behaviors.withTimers(timers -> new BotRoot(ctx, timers, botName)));
     }
 
     private enum Phase{
@@ -64,8 +79,9 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
      *
      * @param context the context of this actor system
      */
-    private BotRoot(ActorContext<Message> context, String botName) {
+    private BotRoot(ActorContext<Message> context, TimerScheduler<Message> timers, String botName) {
         super(context);
+        this.timers = timers;
         recentDirections = new ArrayList<>();
         this.recentDistances = new ArrayList<>();
 
@@ -96,19 +112,19 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 			return this;
 		}
 
-		// Weiter mit der normalen Verarbeitung der Nachrichten
-		return switch(message){
-			case PingMessage ignored -> onPing();
-			case SetupMessage setupMessage -> onSetup(setupMessage);
-			case StartMessage ignored -> onStart();
-			case AvailableDirectionsReplyMessage availableDirectionsReplyMessage -> onAvailableDirectionsReply(availableDirectionsReplyMessage);
-			case ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage -> onChosenDirectionIgnored(chosenDirectionIgnoredMessage);
-			case TargetReachedMessage ignored -> onTargetReached();
-			case PauseMessage ignored -> onPause();
-			case ResumeMessage ignored -> onResume();
-			case ListingResponse listingResponse -> onListingResponse(listingResponse);
-			case UnregisteredMessage ignored -> onUnregister();
-			case UnexpectedMessage unexpectedMessage -> onUnexpectedMessage(unexpectedMessage);
+        return switch(message){
+            case PingMessage ignored                                                   -> onPing();
+            case SetupMessage setupMessage                                             -> onSetup(setupMessage);
+            case StartMessage ignored                                                  -> onStart();
+            case AvailableDirectionsReplyMessage availableDirectionsReplyMessage       -> onAvailableDirectionsReply(availableDirectionsReplyMessage);
+            case ChosenDirectionIgnoredMessage chosenDirectionIgnoredMessage           -> onChosenDirectionIgnored(chosenDirectionIgnoredMessage);
+            case TargetReachedMessage ignored                                          -> onTargetReached();
+            case PauseMessage ignored                                                  -> onPause();
+            case ResumeMessage ignored                                                 -> onResume();
+            case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
+            case UnregisteredMessage ignored                                           -> onUnregister();
+            case UnexpectedMessage unexpectedMessage                                   -> onUnexpectedMessage(unexpectedMessage);
+            case TimerMessage ignored                                                  -> onTimerMessage();
 
 			default -> throw new IllegalStateException("Unexpected value: " + message);
 		};
@@ -127,7 +143,8 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 	private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message) {
 		getContext().getLog().info("Received available directions from board {}", message.directions());
 		List<Direction> availableDirections = message.directions();
-		int currentDistance = message.distance();
+        timers.startSingleTimer(TIMER_KEY, new TimerMessage(), Duration.ofMillis(sleepTime));
+        int currentDistance = message.distance();
 		moveCount++;
 
 		// Wenn der Bot keine Richtung mehr wählen kann
@@ -321,13 +338,16 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onSetup(SetupMessage setupMessage){
         this.currentPhase = Phase.READY;
+        sleepTime = setupMessage.sleepTime();
         getContext().getLog().info("Bot {} got setup message", actorName);
         getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         return this;
     }
 
     private Behavior<Message> onStart(){
+        this.currentPhase = Phase.PLAYING;
         getContext().getLog().info("Bot {} got start message", actorName);
+        getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
         return this;
     }
@@ -347,9 +367,10 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 		return this;
 	}
 
-
     private Behavior<Message> onPause(){
         this.currentPhase = Phase.PAUSED;
+        timers.cancel(TIMER_KEY);
+        getContext().getLog().info("Timer was stopped");
         getContext().getLog().info("Game was paused");
         getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
         return this;
@@ -393,6 +414,18 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onUnexpectedMessage(UnexpectedMessage unexpectedMessage) {
         getContext().getLog().error(unexpectedMessage.description());
+        return this;
+    }
+
+    private Behavior<Message> onTimerMessage() {
+        if(this.currentPhase == Phase.PLAYING){
+            boardRef.tell(new AvailableDirectionsRequestMessage(botRef));
+            getContext().getLog().info("Timer triggered a request");
+        }
+        else {
+            timers.cancel(TIMER_KEY);
+            getContext().getLog().info("Timer was stopped");
+        }
         return this;
     }
 }

@@ -8,6 +8,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractOnMessageBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.TimerScheduler;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
 import ch.bfh.akka.botrace.board.model.BoardModel;
@@ -18,14 +19,20 @@ import ch.bfh.akka.botrace.common.Message;
 import ch.bfh.akka.botrace.common.boardmessage.*;
 import ch.bfh.akka.botrace.common.botmessage.*;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 
 /**
  * The root actor of the Board actor system. It registers itself at the {@link Receptionist}
  * under the service name {@link BoardService#SERVICE_NAME}.
  */
 public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root actor
+
+	public record TimerMessage() implements Message { }
+
+	private final TimerScheduler<Message> timers;
 
 	/** The service key for the board service {@link BoardService#SERVICE_NAME} actor system. */
 	public final static ServiceKey<Message> SERVICE_KEY = ServiceKey.create(Message.class, BoardService.SERVICE_NAME);
@@ -37,7 +44,7 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 	 * @param board a board adapter
 	 */
 	public static Behavior<Message> create(BoardModel board) {
-		return Behaviors.setup(context -> new BoardRoot(context, board));
+		return Behaviors.setup(ctx -> Behaviors.withTimers(timers -> new BoardRoot(ctx, timers, board)));
 	}
 
 	/**
@@ -47,9 +54,10 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 	 * @param context context of the actor system.
 	 * @param board adapter for the board model.
 	 */
-	private BoardRoot(ActorContext<Message> context, BoardModel board) {
+	private BoardRoot(ActorContext<Message> context, TimerScheduler<Message> timers, BoardModel board) {
 		super(context);
 		boardModel = board;
+		this.timers = timers;
 
 		// TODO: Maby there are more things to initialize in constructor, idk yet
 		context.getLog().info(getClass().getSimpleName() + " created: " + this.getContext().getSelf());
@@ -60,6 +68,8 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 				.receptionist()
 				.tell(Receptionist.register(SERVICE_KEY, this.getContext().getSelf().narrow()));
 		context.getLog().info(getClass().getSimpleName() + ": Registered at the receptionist");
+
+		timers.startTimerAtFixedRate(new TimerMessage(), Duration.ofSeconds(5));
 	}
 
 
@@ -82,6 +92,11 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		}
 	}
 
+	private void notifyTargetReached(String name) {
+		for (BoardUpdateListener listener : listeners) {
+			listener.notifyTargetReached(name);
+		}
+	}
 
 
 	/**
@@ -103,6 +118,10 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 			// Events coming from user input sending to all bots
 			case PauseMessage pauseMessage 												-> onPauseMessage(pauseMessage);
 			case ResumeMessage resumeMessage											-> onResumeMessage(resumeMessage);
+
+			case TimerMessage ignored                                                  -> onTimerMessage();
+			case TimeoutMessage timeoutMessage 										   -> onTimeout(timeoutMessage);
+
             default -> throw new IllegalStateException("Message not handled: " + message);
         };
 
@@ -119,6 +138,18 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		return this;
 	}
 
+	private Behavior<Message> onTimerMessage() {
+
+		for (ActorRef<Message> ref : boardModel.getBots()) {
+			getContext().getLog().info("Sending ping to " + ref.path().name());
+			ref.tell(new PingMessage());
+			String key = "timeout_" + ref.path().name(); //key for each bot
+			getContext().getLog().info("Setting timeout for " + ref.path().name());
+			timers.startSingleTimer(key, new TimeoutMessage(ref), Duration.ofSeconds(5));
+		}
+		return this;
+	}
+
 	private Behavior<Message> onResumeMessage(ResumeMessage resumeMessage) {
 		getContext().getLog().info("Starting race");
 
@@ -129,9 +160,11 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 	}
 
 	Behavior<Message> onPingResponseMessage(PingResponseMessage pingResponseMessage) {
-		getContext().getLog().info("Ping recieved");
+		getContext().getLog().info("Ping response received from " + pingResponseMessage.name());
 
-		//TODO: Dont know how to implement it yet
+		// cancel the timeout when a response is received
+		String key = "timeout_" + pingResponseMessage.name();
+		timers.cancel(key);
 		return this;
 	}
 
@@ -157,6 +190,9 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		getContext().getLog().info("Registering: {}", message.name());
 		// adding to boardModel
 		boardModel.registerNewBot(message.name(), message.botRef());
+
+		// ping the bot
+		message.botRef().tell(new PingMessage());
 
 		//TODO: What is the sleepTime parameter @SetUpMessage() ??? I just put 600 --> needs to be adjusted
 
@@ -187,16 +223,24 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 			// if bot finished -> new TargetReachedMessage
 			if(boardModel.checkIfBotFinished(message.botRef())){
 				message.botRef().tell(new TargetReachedMessage());
+				notifyTargetReached(boardModel.getPlayerName().get(message.botRef()));
 				getContext().getLog().info("Target has been reached by: " + boardModel.getPlayerName().get(message.botRef()));
+			} else {
+				notifyBoardUpdate();
 			}
-
-			notifyBoardUpdate();
 		}
 		// Send ChosenDirectionIgnoredMessage if failed to play move
 		else{
 			getContext().getLog().info("Move Failed: {}", message.chosenDirection());
 			message.botRef().tell(new ChosenDirectionIgnoredMessage("Move not Possible"));
 		}
+		return this;
+	}
+
+	private Behavior<Message> onTimeout(TimeoutMessage timeoutMessage) {
+		getContext().getLog().info("Timeout reached for " + timeoutMessage.botRef().path().name());
+		getContext().getLog().info("Deregistering bot " + timeoutMessage.botRef().path().name());
+		boardModel.deregister(timeoutMessage.botRef());
 		return this;
 	}
 }

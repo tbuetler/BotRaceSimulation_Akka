@@ -89,7 +89,7 @@ public class BoardModel implements Board {
         playerPosition.put(botRef, start);
         bots.add(botRef);
 
-        notifyUiListeners();  // trigger listener to rerender UI on new bot registration
+        //notifyUiListeners();  // trigger listener to rerender UI on new bot registration
     }
 
     @Override
@@ -233,6 +233,7 @@ public class BoardModel implements Board {
     public void deregister(ActorRef<Message> botRef) {
         playerPosition.remove(botRef);
         playerName.remove(botRef);
+        bots.remove(botRef);
     }
 
 

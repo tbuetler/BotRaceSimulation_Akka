@@ -18,9 +18,13 @@ import ch.bfh.akka.botrace.common.boardmessage.PauseMessage;
 import ch.bfh.akka.botrace.common.boardmessage.ResumeMessage;
 import javafx.application.Platform;
 
-import java.io.IOException;
+import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Scanner;
+import java.net.URLDecoder;
+import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 public class BoardMain implements BoardUpdateListener {
     /**
@@ -38,31 +42,98 @@ public class BoardMain implements BoardUpdateListener {
 
 
     public static void main(String[] args) throws IOException {
-        String boardChoiceShortcut = "";
-        int boardChoice = 1; // Assume this is the board choice logic
-        boardChoiceShortcut = switch (boardChoice) {
-            case 1 -> "board1.txt";
-            case 2 -> "board2.txt";
-            case 3 -> "board3.txt";
-            case 4 -> "board4.txt";
-            case 5 -> "board5.txt";
-            case 6 -> "board6.txt";
-            default -> "board1.txt";
-        };
+        try {
+            System.out.println("Select a board file by number:");
 
+            List<String> files = Arrays.asList(getResourceListing(BoardMain.class, "ch/bfh/akka/botrace/board/model/"));
+
+            if (files.isEmpty()) {
+                System.out.println("No boards found");
+                return;
+            }
+
+            for (int i = 0; i < files.size(); i++) {
+                System.out.printf("[%d] %s\n", i + 1, files.get(i));
+            }
+
+            System.out.print("Choose your board: ");
+
+            int fileIndex = scanner.nextInt() - 1;
+            if (fileIndex < 0 || fileIndex >= files.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+
+            String boardChoiceShortcut = files.get(fileIndex);
         URL resourceUrl = BoardMain.class.getResource("/ch/bfh/akka/botrace/board/model/" + boardChoiceShortcut);
         if (resourceUrl == null) {
-            System.out.println("Resource file not found: " + boardChoiceShortcut);
+            System.out.println("Resource file not found: "+boardChoiceShortcut);
             return;
         }
 
         String filePath = resourceUrl.getFile();
         boardModel = new BoardModel(filePath);
-        boardModel.addBoardUpdateListener(new BoardMain()); // register cli board as listener of BoardModel
+        boardModel.addBoardUpdateListener(new BoardMain()); // subscribe cli board to BoardModel
 
         board = ActorSystem.create(rootBehavior(), "ClusterSystem");
         System.out.println("Board Actor System created");
         runCli(); // display application
+        } catch (IOException | URISyntaxException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Copied code: Source -> https://www.uofr.net/~greg/java/get-resource-listing.html
+     * List directory contents for a resource folder. Not recursive.
+     * This is basically a brute-force implementation.
+     * Works for regular files and also JARs.
+     *
+     * @author Greg Briggs
+     * @param clazz Any java class that lives in the same place as the resources you want.
+     * @param path Should end with "/", but not start with one.
+     * @return Just the name of each member item, not the full paths.
+     * @throws URISyntaxException
+     * @throws IOException
+     */
+    static String[] getResourceListing(Class clazz, String path) throws URISyntaxException, IOException {
+        URL dirURL = clazz.getClassLoader().getResource(path);
+        if (dirURL != null && dirURL.getProtocol().equals("file")) {
+            /* A file path: easy enough */
+            return new File(dirURL.toURI()).list((dir, name) -> name.endsWith(".txt")); // filter to only include .txt files
+        }
+
+        if (dirURL == null) {
+            /*
+             * In case of a jar file, we can't actually find a directory.
+             * Have to assume the same jar as clazz.
+             */
+            String me = clazz.getName().replace(".", "/")+".class";
+            dirURL = clazz.getClassLoader().getResource(me);
+        }
+
+        if (dirURL.getProtocol().equals("jar")) {
+            /* A JAR path */
+            String jarPath = dirURL.getPath().substring(5, dirURL.getPath().indexOf("!")); //strip out only the JAR file
+            JarFile jar = new JarFile(URLDecoder.decode(jarPath, "UTF-8"));
+            Enumeration<JarEntry> entries = jar.entries(); //gives ALL entries in jar
+            Set<String> result = new HashSet<String>(); //avoid duplicates in case it is a subdirectory
+            while(entries.hasMoreElements()) {
+                String name = entries.nextElement().getName();
+                if (name.startsWith(path) && name.endsWith(".txt")) { //filter according to the path
+                    String entry = name.substring(path.length());
+                    int checkSubdir = entry.indexOf("/");
+                    if (checkSubdir >= 0) {
+                        // if it is a subdirectory, we just return the directory name
+                        entry = entry.substring(0, checkSubdir);
+                    }
+                    result.add(entry);
+                }
+            }
+            return result.toArray(new String[result.size()]);
+        }
+
+        throw new UnsupportedOperationException("Cannot list files for URL "+dirURL);
     }
 
 
@@ -182,10 +253,20 @@ public class BoardMain implements BoardUpdateListener {
     public void boardUpdated() {
         displayBoard();// Call the display function whenever an update is notified
         try {
-            Thread.sleep(50);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        boardRef.tell(new StartRaceMessage());
+        //boardRef.tell(new StartRaceMessage());
+    }
+
+    @Override
+    public void notifyTargetReached(String name) {
+        System.out.println("Target reached by bot: " + name);
+        gameRunning = false;
+        if (board != null) {
+            board.terminate();
+        }
+        Platform.exit();
     }
 }
