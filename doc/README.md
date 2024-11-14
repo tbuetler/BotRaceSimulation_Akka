@@ -132,6 +132,160 @@ bot has timed out and will terminate the game.
 
 > Pseudocode of the algorithm(s)
 
+The bot uses a randomized path selection algorithm to navigate a grid and reach a target position. At each move, it
+queries the possible directions it can go from the current position and randomly picks one direction from this set. The
+bot’s path selection logic is straightforward but not optimal, as it lacks memory of past positions or awareness of
+dead-ends, which makes it susceptible to revisiting the same points repeatedly or getting stuck in loops.
+
+Here's an example of a pseudocode for the bot's algorithm:
+
+```pseudocode
+function playGame() {
+    initializeBot();
+    while (true) {
+        switch (currentPhase) {
+            case REGISTERING:
+                registerWithBoard();
+                waitForGameToStart();
+                break;
+
+            case READY:
+                waitForAvailableDirections();
+                break;
+
+            case PLAYING:
+                chooseDirection();
+                sendChosenDirectionToBoard();
+                checkIfMoveIgnored();
+                checkIfTargetReached();
+                break;
+
+            case PAUSED:
+                waitForResumeMessageFromBoard();
+                break;
+
+            case TARGET_REACHED:
+                deregisterWithBoard();
+                return;  // Spiel endet, wenn das Ziel erreicht ist
+        }
+    }
+}
+
+// Phase: REGISTERING
+function registerWithBoard() {
+    // Send registration message to the board
+    print("Registering bot with the board");
+}
+
+function waitForGameToStart() {
+    // Wait until the start message is received
+    print("Waiting for game to start...");
+}
+
+// Phase: READY
+function waitForAvailableDirections() {
+    // Request available directions from the board and wait for response
+    print("Requesting available directions from the board");
+}
+
+// Phase: PLAYING
+function chooseDirection() {
+    availableDirections = getAvailableDirections();  // Retrieve from board message
+    if (availableDirections.isEmpty()) {
+        print("No directions available");
+        return;
+    }
+    
+    // **Simple Strategy for Pathfinding**:
+    // 1. Evaluate each direction:
+    //    - If moving closer to the target, prioritize it.
+    //    - If not closer, deprioritize.
+    // 2. Choose the first best direction; fallback to random if blocked.
+    
+    bestDirection = null;
+    minDistanceToTarget = calculateDistanceToTarget(currentPosition);
+    
+    // Evaluate all directions to find the best one
+    for each direction in availableDirections {
+        newPosition = calculateNewPosition(currentPosition, direction);
+        distanceToTarget = calculateDistanceToTarget(newPosition);
+        
+        if (distanceToTarget < minDistanceToTarget) {
+            minDistanceToTarget = distanceToTarget;
+            bestDirection = direction;
+        }
+    }
+
+    // If a closer direction is found, choose it; otherwise, pick a random direction
+    chosenDirection = bestDirection != null ? bestDirection : chooseRandomDirection(availableDirections);
+}
+
+function sendChosenDirectionToBoard() {
+    // Send the chosen direction to the board
+    print("Sending chosen direction to board:", chosenDirection);
+}
+
+function checkIfMoveIgnored() {
+    // If the move is ignored, request available directions again
+    if (moveWasIgnored()) {
+        print("Chosen direction was ignored. Re-requesting directions");
+        waitForAvailableDirections();
+    }
+}
+
+function checkIfTargetReached() {
+    // Check if the bot has reached the target position
+    if (currentPosition == targetPosition) {
+        currentPhase = TARGET_REACHED;
+        print("Target reached!");
+    }
+}
+
+// Phase: PAUSED
+function waitForResumeMessageFromBoard() {
+    // Wait for a resume message to continue playing
+    print("Game paused. Waiting to resume...");
+}
+
+// Phase: TARGET_REACHED
+function deregisterWithBoard() {
+    // Send deregistration message to the board
+    print("Deregistering bot from the board");
+}
+
+// **Helper Functions**:
+function calculateNewPosition(currentPosition, direction) {
+    // Calculate new position based on direction
+    return newPosition;
+}
+
+function calculateDistanceToTarget(position) {
+    // Calculate distance from the given position to the target
+    return distance;
+}
+
+function chooseRandomDirection(availableDirections) {
+    // Choose a random direction from available options
+    return randomDirection;
+}
+
+function moveWasIgnored() {
+    // Check if the move was ignored based on board response
+    return trueOrFalse;
+}
+
+function initializeBot() {
+    // Set initial values for bot
+    currentPhase = REGISTERING;
+    currentPosition = (0, 0);
+    moveCount = 0;
+    recentDirections = [];
+}
+```
+
+This is a simplified example, and the actual implementation may vary based on the specific requirements and design
+decisions of your bot.
+
 ## Administrative Issues
 
 > For every team member: his/her experience  
@@ -150,5 +304,6 @@ BlaBla
 **Tim**\
 Utilized Git and GitHub for version control, which was a new experience for me. I learned how to work with branches,
 pull requests, and merge requests, which was a valuable skill to acquire.
-Took over a part of the GUI of the project, which was a challenging but rewarding experience. We had to design and implement
+Took over a part of the GUI of the project, which was a challenging but rewarding experience. We had to design and
+implement
 the UI without a pre-defined layout, which forced us to think creatively and come up with our own solution.
