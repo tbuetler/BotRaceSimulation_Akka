@@ -145,7 +145,7 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 			ref.tell(new PingMessage());
 			String key = "timeout_" + ref.path().name(); //key for each bot
 			getContext().getLog().info("Setting timeout for " + ref.path().name());
-			timers.startSingleTimer(key, new TimeoutMessage(ref), Duration.ofSeconds(5));
+			timers.startSingleTimer(key, new TimeoutMessage(ref), Duration.ofSeconds(3));
 		}
 		return this;
 	}
