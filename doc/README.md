@@ -341,3 +341,4 @@ taught me a lot about UI design principles and integration with backend systems.
 ### Contributor analytics
 
 ![contributor-analytics](src/Contributor_Analytics.png)
+
