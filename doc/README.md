@@ -17,23 +17,23 @@ through the grid, avoiding obstacles and reaching the target.
 The phases of the board when playing the game are:
 
 - **Setup Phase:**\
-The board is set up with the initial configuration, including the layout of obstacles and the starting
-and target positions.
+  The board is set up with the initial configuration, including the layout of obstacles and the starting
+  and target positions.
 
 - **Playing Phase:**\
-The bots start the race, and they communicate with the board to get information about available
-directions and the chosen direction. They move one step at a time, and the board updates their positions accordingly.
+  The bots start the race, and they communicate with the board to get information about available
+  directions and the chosen direction. They move one step at a time, and the board updates their positions accordingly.
 
 - **Pause Phase:**\
-The board can pause the race at any time, for example, if a bot reaches a specific position or if a
-certain condition is met.
+  The board can pause the race at any time, for example, if a bot reaches a specific position or if a
+  certain condition is met.
 
 - **Resume Phase:**\
-The race can be resumed after being paused, allowing the bots to continue their movement.
+  The race can be resumed after being paused, allowing the bots to continue their movement.
 
 - **Termination Phase:** \
-The race is terminated when all bots have reached the target or when a specific condition is met,
-such as a certain time limit or a specific number of steps taken.
+  The race is terminated when all bots have reached the target or when a specific condition is met,
+  such as a certain time limit or a specific number of steps taken.
 
 **Akka**\
 The basic principle of Akka is to build distributed systems using actors, which are lightweight, isolated, and
@@ -51,13 +51,15 @@ continues until the bot reaches the target, at which point the board sends a ter
 
 #### Error Cases
 
-- **Unknown Message:** If the bot sends an unknown message to the board, the board will respond with an error message, and
-the
-bot will not be able to continue playing.
+- **Unknown Message:** If the bot sends an unknown message to the board, the board will respond with an error message,
+  and
+  the
+  bot will not be able to continue playing.
 
-- **Timeout:** If the bot does not respond to the board's messages within a certain time limit, the board will assume that
-the
-bot has timed out and will terminate the game.
+- **Timeout:** If the bot does not respond to the board's messages within a certain time limit, the board will assume
+  that
+  the
+  bot has timed out and will terminate the game.
 
 ### Sequencediagram without interrupts
 
@@ -98,7 +100,9 @@ actors, each representing a bot.
 
 - `BotRoot`: Represents the root actor of the bot actor system.
 - `ClusterListener`: Listens to cluster events and handles the registration and deregistration of bots.
-- `Bot`: Represents a single bot in the system.
+- `BotMain`: The main actor of the bot actor system. It handles the main behavior of the bot. It receives the setup
+  message from the board actor system and starts the race. It also handles the movement of the bot and the handling of
+  obstacles.
 
 ### States of the Bot Actor System
 
@@ -106,7 +110,8 @@ The bot actor system has the following states:
 
 - `PhaseStarting`: The state when the bot is initializing and preparing to register with the board actor system.
 
-- `PhaseRegister`: The state when the bot is registering with the board actor system. The bot is waiting for the board to
+- `PhaseRegister`: The state when the bot is registering with the board actor system. The bot is waiting for the board
+  to
   respond with a setup message.
 
 - `PhaseReady`: The state when the bot is ready to start the race. The bot is waiting for the board to start the race.
@@ -114,7 +119,8 @@ The bot actor system has the following states:
 - `PhasePlaying`: The state when the bot is playing the race. The bot is sending messages to the board to request
   available directions and move to a new position.
 
-- `TargetReached`: The state when the bot has reached the target position. The bot starts a timer and after a certain duration the bot will Deregister itself from the board.
+- `TargetReached`: The state when the bot has reached the target position. The bot starts a timer and after a certain
+  duration the bot will Deregister itself from the board.
 
 ### Termination of the Bot Actor System
 
@@ -285,35 +291,51 @@ decisions of your bot.
 ## Administrative Issues
 
 **Gil**\
-In this project, I learned and applied the fundamentals of the message exchange system of the Akka framework. 
-I started working on the BoardModel and BoardRoot class, which was fun to implement the handling of the incoming messages, updating the states of the current Board and sending messages back to the Bot. 
-I got more familiar with  using Git with multiple teammembers and had first experience with branches, merges and so on. The task-splitting in the group was well organised, but if your class depend on another logic, good communication is needed to merge the different implementations. 
-On thursday I also tried working on the bot's algorithm. 
-For me this was the hardest task and there could have been a bit more guidance (but since there is a price to win for the best algorithm, I see why there is less description on the problem). 
+In this project, I learned and applied the fundamentals of the message exchange system of the Akka framework.
+I started working on the BoardModel and BoardRoot class, which was fun to implement the handling of the incoming
+messages, updating the states of the current Board and sending messages back to the Bot.
+I got more familiar with using Git with multiple teammembers and had first experience with branches, merges and so on.
+The task-splitting in the group was well organised, but if your class depend on another logic, good communication is
+needed to merge the different implementations.
+On thursday I also tried working on the bot's algorithm.
+For me this was the hardest task and there could have been a bit more guidance (but since there is a price to win for
+the best algorithm, I see why there is less description on the problem).
 But in general the project was a good experience :)
-
 
 **Martin**\
 I've focused on enhancing bot functionality and user interface interactions in a bot application. My key tasks included:
 
-Improving Bot Responsiveness: I fixed bot handling by setting appropriate timeouts and added new features like ping board functionality.
-Enhancing User Interaction: I implemented features that allow users to start races on demand and select resources via a CLI, making the application more interactive.
-Integrating Akka Framework: I worked with the Akka framework to facilitate message events between actors and the CLI, which enhanced the application's scalability and responsiveness.
+Improving Bot Responsiveness: I fixed bot handling by setting appropriate timeouts and added new features like ping
+board functionality.
+Enhancing User Interaction: I implemented features that allow users to start races on demand and select resources via a
+CLI, making the application more interactive.
+Integrating Akka Framework: I worked with the Akka framework to facilitate message events between actors and the CLI,
+which enhanced the application's scalability and responsiveness.
 
 Challenges and Learnings
-Timeout Management: One significant challenge was managing timeouts for bots, which I initially missed but later fixed to enhance bot efficiency.
-Branch Merges and Conflicts: Merging changes and resolving conflicts were tough but essential for maintaining code integrity and functionality.
-Advanced Logging: Shifting from standard output to file-based logging helped in debugging and keeping the UI interactions smooth.
-These experiences improved my skills in managing complex software functionalities and deepened my understanding of user-centric design and efficient code management.
-GUI Implementation Attempt: I tried to implement a GUI using FXML but had to abandon this approach due to time constraints and the complexity of the concept.
+Timeout Management: One significant challenge was managing timeouts for bots, which I initially missed but later fixed
+to enhance bot efficiency.
+Branch Merges and Conflicts: Merging changes and resolving conflicts were tough but essential for maintaining code
+integrity and functionality.
+Advanced Logging: Shifting from standard output to file-based logging helped in debugging and keeping the UI
+interactions smooth.
+These experiences improved my skills in managing complex software functionalities and deepened my understanding of
+user-centric design and efficient code management.
+GUI Implementation Attempt: I tried to implement a GUI using FXML but had to abandon this approach due to time
+constraints and the complexity of the concept.
 
 **Pablo**\
-In this project, I was able to expand my akka knowledge by implementing a lot of message handling. I was also confronted with a lot of logging and error handling. My newly gained knowledge in akka contains working with a receptionist and working with timers. I also gained experience working in a group and creating concepts of algorithms. In addition to all of this I was able to learn new git cli commands and I was also confronted with more complex version control problems like merge requests and various branches being developed simultaneously.
+In this project, I was able to expand my akka knowledge by implementing a lot of message handling. I was also confronted
+with a lot of logging and error handling. My newly gained knowledge in akka contains working with a receptionist and
+working with timers. I also gained experience working in a group and creating concepts of algorithms. In addition to all
+of this I was able to learn new git cli commands and I was also confronted with more complex version control problems
+like merge requests and various branches being developed simultaneously.
 
 **Tim**\
 Using Git and GitHub for version control was a new and valuable experience for me. I learned to manage branches, submit
 pull requests, and resolve merge conflicts, which improved my workflow. I also took on part of the GUI design for this
-project, which presented a unique challenge. Some troubles appeared as I tried to use the FXMLLoader. However, this experience
+project, which presented a unique challenge. Some troubles appeared as I tried to use the FXMLLoader. However, this
+experience
 taught me a lot about UI design principles and integration with backend systems.
 
 ### Contributor analytics
