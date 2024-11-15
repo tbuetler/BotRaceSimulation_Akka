@@ -34,8 +34,12 @@ import java.util.*;
 
 public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian actor
 
-    public record TimerMessage() implements Message { }
-    static final String TIMER_KEY = "timer";
+	public record TimerMessagePlay() implements Message { }
+	public record TimerMessageRegistering() implements Message { }
+	public record TimerMessageReached() implements Message { }
+	static final String TIMER_KEY_PLAY = "PlayTimer";
+	static final String TIMER_KEY_REGISTER = "RegisterTimer";
+	static final String TIMER_KEY_REACHED = "ReachedTimer";
 
     private final TimerScheduler<Message> timers;
     private int sleepTime;
@@ -124,7 +128,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
             case ListingResponse listingResponse                                       -> onListingResponse(listingResponse);
             case UnregisteredMessage ignored                                           -> onUnregister();
             case UnexpectedMessage unexpectedMessage                                   -> onUnexpectedMessage(unexpectedMessage);
-            case TimerMessage ignored                                                  -> onTimerMessage();
+            case TimerMessagePlay ignored                                                  -> onTimerMessage();
 
 			default -> throw new IllegalStateException("Unexpected value: " + message);
 		};
@@ -143,7 +147,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 	private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message) {
 		getContext().getLog().info("Received available directions from board {}", message.directions());
 		List<Direction> availableDirections = message.directions();
-        timers.startSingleTimer(TIMER_KEY, new TimerMessage(), Duration.ofMillis(sleepTime));
+        timers.startSingleTimer(TIMER_KEY_PLAY, new TimerMessagePlay(), Duration.ofMillis(sleepTime));
         int currentDistance = message.distance();
 		moveCount++;
 
@@ -361,6 +365,8 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 	private Behavior<Message> onTargetReached() {
 		getContext().getLog().info("Bot {} reached target", actorName);
 		System.out.println("Bot has played " + this.moveCount + " moves");
+		timers.startSingleTimer(TIMER_KEY_REACHED, new TimerMessagePlay(), Duration.ofMillis(5000));
+		getContext().getLog().info("New target reached timer got started");
 		boardRef.tell(new DeregisterMessage("Bot reached Target", this.botRef));
 		this.currentPhase = Phase.TARGET_REACHED;
 		getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
@@ -369,7 +375,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
     private Behavior<Message> onPause(){
         this.currentPhase = Phase.PAUSED;
-        timers.cancel(TIMER_KEY);
+        timers.cancel(TIMER_KEY_PLAY);
         getContext().getLog().info("Timer was stopped");
         getContext().getLog().info("Game was paused");
         getContext().getLog().info("Bot {} switched to Phase: {}", actorName, this.currentPhase);
@@ -394,6 +400,8 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
         getContext().getLog().info("Received listing from receptionist");
         for (ActorRef<Message> boardRef : listingResponse.listing.getServiceInstances(serviceKeyForBoard)) {
             this.boardRef = boardRef;
+			timers.startSingleTimer(TIMER_KEY_PLAY, new TimerMessagePlay(), Duration.ofMillis(5000));
+			getContext().getLog().info("StartedRegisteringTimer");
             boardRef.tell(new RegisterMessage(actorName, botRef));
             getContext().getLog().info("Stored board reference from receptionist");
         }
@@ -423,9 +431,34 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
             getContext().getLog().info("Timer triggered a request");
         }
         else {
-            timers.cancel(TIMER_KEY);
+            timers.cancel(TIMER_KEY_PLAY);
             getContext().getLog().info("Timer was stopped");
         }
         return this;
     }
+
+	private Behavior<Message> onTimerMessageRegistering() {
+		if(this.currentPhase == Phase.REGISTERING){
+			boardRef.tell(new RegisterMessage(actorName, botRef));
+			getContext().getLog().info("Timer triggered a new registermessage");
+		}
+		else {
+			timers.cancel(TIMER_KEY_REGISTER);
+			getContext().getLog().info("Register Timer was stopped");
+		}
+		return this;
+	}
+
+	private Behavior<Message> onTimerMessageReached() {
+		if(this.currentPhase == Phase.TARGET_REACHED){
+			boardRef.tell(new DeregisterMessage("Bot reached target but ran into a timeout", botRef));
+			getContext().getLog().info("Timer triggered a new deregister message");
+		}
+		else {
+			timers.cancel(TIMER_KEY_REACHED);
+			getContext().getLog().info("Reached Timer was stopped");
+		}
+		return this;
+	}
+
 }
