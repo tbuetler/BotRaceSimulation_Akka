@@ -84,7 +84,6 @@ public class BoardModel implements Board {
 
     @Override
     public void registerNewBot(String name, ActorRef<Message> botRef) {
-        //Todo: does register need to send a message back to bot?
         playerName.put(botRef, name);
         playerPosition.put(botRef, start);
         bots.add(botRef);

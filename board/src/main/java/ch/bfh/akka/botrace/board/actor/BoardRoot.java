@@ -59,7 +59,6 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 		boardModel = board;
 		this.timers = timers;
 
-		// TODO: Maby there are more things to initialize in constructor, idk yet
 		context.getLog().info(getClass().getSimpleName() + " created: " + this.getContext().getSelf());
 
 		// Register the board root actor at the receptionist
@@ -71,12 +70,6 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 
 		timers.startTimerAtFixedRate(new TimerMessage(), Duration.ofSeconds(5));
 	}
-
-
-	/*TODO: sennd startMessage to all bots if the user presses start in the GUI
-	   startMessage sends the parameter speed.
-	 */
-
 
 	private List<BoardUpdateListener> listeners = new ArrayList<>();
 
@@ -193,8 +186,6 @@ public class BoardRoot extends AbstractOnMessageBehavior<Message> { // root acto
 
 		// ping the bot
 		message.botRef().tell(new PingMessage());
-
-		//TODO: What is the sleepTime parameter @SetUpMessage() ??? I just put 600 --> needs to be adjusted
 
 		// sending SetupMessage back to bot
 		message.botRef().tell(new SetupMessage(600));

@@ -16,7 +16,6 @@ public class BoardMain extends Application {
      */
     @Override
     public void init() {
-        // TODO Initialize the board actor system, keep a reference to it.
     }
 
     /**
@@ -25,7 +24,6 @@ public class BoardMain extends Application {
      */
     @Override
     public void start(Stage primaryStage) {
-        // TODO Replace the following by a 'real' GUI
         Label label = new Label("Hello Akka programmer, please complete the GUI for the board");
         StackPane pane = new StackPane(label);
         Scene scene = new Scene(pane, 500, 200);
@@ -36,7 +34,6 @@ public class BoardMain extends Application {
 
     @Override
     public void stop() {
-        // TODO Terminate actor system
     }
 
     public static void main(String[] args) {

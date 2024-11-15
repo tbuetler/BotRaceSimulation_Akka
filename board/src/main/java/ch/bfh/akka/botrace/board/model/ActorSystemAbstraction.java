@@ -12,5 +12,4 @@ package ch.bfh.akka.botrace.board.model;
  */
 public interface ActorSystemAbstraction {
 
-    // TODO Add methods...
 }
