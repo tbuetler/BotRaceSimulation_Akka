@@ -286,11 +286,13 @@ decisions of your bot.
 ## Administrative Issues
 
 **Gil**\
-This project allowed me to enhance my understanding of distributed systems, specifically with Akka's actor-based
-approach. I was involved in designing the board actor system, focusing on message handling between the bots and the
-board. This project highlighted the importance of effective communication between team members, as well as a deep
-understanding of concurrent programming concepts. I found it challenging yet rewarding to design the message protocols
-and ensure consistent state transitions in the system.
+In this project, I learned and applied the fundamentals of the message exchange system of the Akka framework. 
+I started working on the BoardModel and BoardRoot class, which was fun to implement the handling of the incoming messages, updating the states of the current Board and sending messages back to the Bot. 
+I got more familiar with  using Git with multiple teammembers and had first experience with branches, merges and so on. The task-splitting in the group was well organised, but if your class depend on another logic, good communication is needed to merge the different implementations. 
+On thursday I also tried working on the bot's algorithm. 
+For me this was the hardest task and there could have been a bit more guidance (but since there is a price to win for the best algorithm, I see why there is less description on the problem). 
+But in general the project was a good experience :)
+
 
 **Martin**\
 I've focused on enhancing bot functionality and user interface interactions in a bot application. My key tasks included:
