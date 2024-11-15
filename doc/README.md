@@ -114,8 +114,7 @@ The bot actor system has the following states:
 - `PhasePlaying`: The state when the bot is playing the race. The bot is sending messages to the board to request
   available directions and move to a new position.
 
-- `TargetReached`: The state when the bot has reached the target position. The bot is waiting for the board to terminate
-  the race.
+- `TargetReached`: The state when the bot has reached the target position. The bot starts a timer and after a certain duration the bot will Deregister itself from the board.
 
 ### Termination of the Bot Actor System
 
