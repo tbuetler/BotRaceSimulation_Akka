@@ -309,11 +309,7 @@ improved my problem-solving abilities, especially in debugging movement paths an
 the grid.
 
 **Pablo**\
-In this project, I was able to apply and expand my knowledge of distributed systems using the Akka framework. My role
-primarily focused on error handling and optimizing the board’s response times to bot requests. Working on exception
-management and error-case scenarios taught me a lot about resilience in distributed applications, which are critical
-when multiple actors interact. Additionally, I took part in debugging the actor interactions, which strengthened my
-understanding of concurrency and synchronization in Java.
+In this project, I was able to expand my akka knowledge by implementing a lot of message handling. I was also confronted with a lot of logging and error handling. My newly gained knowledge in akka contains working with a receptionist and working with timers. I also gained experience working in a group and creating concepts of algorithms.
 
 **Tim**\
 Using Git and GitHub for version control was a new and valuable experience for me. I learned to manage branches, submit
