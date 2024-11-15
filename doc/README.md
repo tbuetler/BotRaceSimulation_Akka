@@ -268,11 +268,18 @@ understanding of concurrent programming concepts. I found it challenging yet rew
 and ensure consistent state transitions in the system.
 
 **Martin**\
-Working on the bot race game gave me the opportunity to develop my skills in pathfinding and algorithm design. I worked
-closely on the bot’s movement logic, implementing strategies to detect and avoid dead-ends, which involved understanding
-how to track previously visited positions and apply memory-based movement to optimize navigation. This experience
-improved my problem-solving abilities, especially in debugging movement paths and refining the bot’s efficiency within
-the grid.
+I've focused on enhancing bot functionality and user interface interactions in a bot application. My key tasks included:
+
+Improving Bot Responsiveness: I fixed bot handling by setting appropriate timeouts and added new features like ping board functionality.
+Enhancing User Interaction: I implemented features that allow users to start races on demand and select resources via a CLI, making the application more interactive.
+Integrating Akka Framework: I worked with the Akka framework to facilitate message events between actors and the CLI, which enhanced the application's scalability and responsiveness.
+
+Challenges and Learnings
+Timeout Management: One significant challenge was managing timeouts for bots, which I initially missed but later fixed to enhance bot efficiency.
+Branch Merges and Conflicts: Merging changes and resolving conflicts were tough but essential for maintaining code integrity and functionality.
+Advanced Logging: Shifting from standard output to file-based logging helped in debugging and keeping the UI interactions smooth.
+These experiences improved my skills in managing complex software functionalities and deepened my understanding of user-centric design and efficient code management.
+GUI Implementation Attempt: I tried to implement a GUI using FXML but had to abandon this approach due to time constraints and the complexity of the concept.
 
 **Pablo**\
 In this project, I was able to apply and expand my knowledge of distributed systems using the Akka framework. My role
