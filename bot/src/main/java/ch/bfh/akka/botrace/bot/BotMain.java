@@ -32,7 +32,7 @@ public class BotMain {
 			// Create an actor that handles cluster domain events
 			context.spawn(ClusterListener.create(), "ClusterListener");
 
-			context.spawn(BotRoot.create("CompetitorBot"), "CompetitorBot");
+			context.spawn(BotRoot.create("java-06"), "java-06");
 
 			// For the competition, only one bot actor will be allowed
 			//context.spawn(BotRoot.create("aName..."), "aBot");

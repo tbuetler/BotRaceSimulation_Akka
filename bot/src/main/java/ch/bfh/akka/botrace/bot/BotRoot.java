@@ -22,8 +22,6 @@ import ch.bfh.akka.botrace.common.botmessage.*;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-import java.util.Timer;
 import java.util.*;
 
 /**
@@ -72,11 +70,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
     List<Direction> recentDirections;
     ArrayList<Integer> recentDistances;
 
-    // Parameters for collision-avoiding
-    private boolean avoiding = false;
-    private int avoidTurn = -1;
-    private Direction avoidDirection;
-
     /**
      * Upon creation of the Bot root actor, it tells the {@link Receptionist} its
      * interest in receiving a list of services.
@@ -91,13 +84,10 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 
         this.moveCount = 0;
         this.currentPhase = Phase.REGISTERING;
-        // TODO initialize the root actor...
 
         ActorRef<Listing> listingResponseAdapter = context
                 .messageAdapter(Listing.class, ListingResponse::new);
         context.getSystem().receptionist().tell(Receptionist.subscribe(serviceKeyForBoard, listingResponseAdapter));
-        // TODO continue initialization, if necessary...
-
     }
 
     private ActorRef<Message> boardRef;
@@ -138,10 +128,8 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 	private int currentX = 0;
 	private int currentY = 0;
 	private int stuckCounter = 0;  // Counter for tracking consecutive dead-ends
-	private int maxStuckTries = 5;  // Maximum attempts to avoid dead-ends before returning to start
-	private Set<Position> visitedPositions = new HashSet<>(); // Track visited positions
-	private Set<Position> unvisitedPositions = new HashSet<>();  // Track unvisited positions
-	private Map<Position, Boolean> visitedPositionsMap = new HashMap<>(); // Map to track blocked/unblocked positions
+	private final int maxStuckTries = 5;  // Maximum attempts to avoid dead-ends before returning to start
+	private final Map<Position, Boolean> visitedPositionsMap = new HashMap<>(); // Map to track blocked/unblocked positions
 
 	// Handles bot's movement decisions, including dead-end avoidance
 	private Behavior<Message> onAvailableDirectionsReply(AvailableDirectionsReplyMessage message) {
@@ -236,7 +224,7 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 	}
 
 	// Map to track blocked positions
-	private Set<Position> blockedPositions = new HashSet<>();
+	private final Set<Position> blockedPositions = new HashSet<>();
 
 	// In der Position Klasse könnte eine Methode hinzugefügt werden, um festzustellen, ob sie blockiert ist
 	class Position {
@@ -282,26 +270,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 		return null;  // Wenn keine unbesuchte Richtung gefunden wird, gib null zurück
 	}
 
-	private boolean allFieldsVisited() {
-		// Logik, um zu prüfen, ob alle Felder besucht wurden
-		return unvisitedPositions.isEmpty();
-	}
-
-	private void saveCurrentPosition(Direction direction) {
-		// Aktualisiere die Position und entferne sie aus der Liste der unbesuchten Felder
-		Position currentPosition = new Position(currentX, currentY, direction);
-		visitedPositions.add(currentPosition);
-		unvisitedPositions.remove(currentPosition);
-
-		// Nach jeder Bewegung die aktuelle Position des Bots aktualisieren
-		switch (direction) {
-			case N: currentY -= 1; break;
-			case E: currentX += 1; break;
-			case S: currentY += 1; break;
-			case W: currentX -= 1; break;
-		}
-	}
-
 	// Returns the position based on the current direction
 	private Position getNewPosition(Direction direction) {
 		int newX = currentX;
@@ -315,29 +283,6 @@ public class BotRoot extends AbstractOnMessageBehavior<Message> { // guardian ac
 		}
 
 		return new Position(newX, newY, direction);
-	}
-
-	// Helper method to calculate direction towards a given position
-	private Direction calculateDirectionToPosition(Position targetPosition) {
-		// Determine the relative direction to move towards the target position
-		int deltaX = targetPosition.x - currentX;
-		int deltaY = targetPosition.y - currentY;
-
-		if (Math.abs(deltaX) > Math.abs(deltaY)) {
-			// Horizontal movement (left or right)
-			if (deltaX > 0) {
-				return Direction.E;
-			} else {
-				return Direction.W;
-			}
-		} else {
-			// Vertical movement (up or down)
-			if (deltaY > 0) {
-				return Direction.S;
-			} else {
-				return Direction.N;
-			}
-		}
 	}
 
     private Behavior<Message> onSetup(SetupMessage setupMessage){
