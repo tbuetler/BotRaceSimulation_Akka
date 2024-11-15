@@ -1,9 +1,13 @@
 # Documentation (yet a Template)
 
+> **Disclaimer:** This documentation might been enhanced and grammer checked with chatGPT and deepl.
+
 > This is a template for the project documentation. Template comments are placed
 > into Markdown notes. Replace them with your text, code fragments, and images.
 
 > **Note:** The documentation is in progress. The notes are going to be delete when finished //Tim
+
+> **Note an Gil, Martin, Pablo:** I de notes steit jewils was im jewilige Abschnitt gschribe söt werde. Bitte prüeft dr text.
 
 ## Introduction
 
@@ -124,6 +128,35 @@ bot has timed out and will terminate the game.
 > Describe how you implemented the states (a.k.a. the phases) of the board. Especially
 > describe how the bot actor system terminates in the case that all its bots have
 > terminated.
+
+The bot actor system is designed to handle the behavior of the bots in the Bot-Race actor system. It consists of several actors, each representing a bot.
+
+### Classes in the Bot Actor System
+
+- `BotRoot`: Represents the root actor of the bot actor system.
+- `ClusterListener`: Listens to cluster events and handles the registration and deregistration of bots.
+- `Bot`: Represents a single bot in the system.
+
+### States of the Bot Actor System
+
+The bot actor system has the following states:
+
+> **Note:** This has to be done correctly
+
+- `Idle`: The initial state of the bot actor system. Bots are not yet registered.
+- `Running`: The state when the bot actors are running.
+- `Terminated`: The state when all the bot actors have terminated.
+
+### Termination of the Bot Actor System
+
+The bot actor system terminates when all the bot actors have terminated. This can happen for several reasons:
+
+- All the bots have reached the target position.
+- All the bots have been deregistered.
+- The board actor system has terminated.
+
+When the bot actor system terminates, it sends a message to the board actor system to inform it of the termination.
+
 
 ## The Algorithms of the Bots
 
@@ -291,8 +324,6 @@ decisions of your bot.
 > For every team member: his/her experience  
 > Overall experience  
 > Git commit analytics
-
-> **Note:** Enhanced and grammar checked with chatGPT / deepl.com
 
 **Gil**\
 This project allowed me to enhance my understanding of distributed systems, specifically with Akka's actor-based
