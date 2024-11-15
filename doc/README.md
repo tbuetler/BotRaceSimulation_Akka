@@ -352,3 +352,7 @@ pull requests, and resolve merge conflicts, which improved my workflow. I also t
 project, which presented a unique challenge. With no predefined layout, I had to be creative and develop a user
 interface that not only presented information clearly but also interacted effectively with the backend. This experience
 taught me a lot about UI design principles and integration with backend systems.
+
+### Contributor analytics
+
+![contributor-analytics](src/Contributor_Analytics.png)
