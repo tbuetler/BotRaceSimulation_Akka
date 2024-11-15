@@ -16,22 +16,22 @@ through the grid, avoiding obstacles and reaching the target.
 \
 The phases of the board when playing the game are:
 
-**Setup Phase:**\
+- **Setup Phase:**\
 The board is set up with the initial configuration, including the layout of obstacles and the starting
 and target positions.
 
-**Playing Phase:**\
+- **Playing Phase:**\
 The bots start the race, and they communicate with the board to get information about available
 directions and the chosen direction. They move one step at a time, and the board updates their positions accordingly.
 
-**Pause Phase:**\
+- **Pause Phase:**\
 The board can pause the race at any time, for example, if a bot reaches a specific position or if a
 certain condition is met.
 
-**Resume Phase:**\
+- **Resume Phase:**\
 The race can be resumed after being paused, allowing the bots to continue their movement.
 
-**Termination Phase:** \
+- **Termination Phase:** \
 The race is terminated when all bots have reached the target or when a specific condition is met,
 such as a certain time limit or a specific number of steps taken.
 
@@ -51,11 +51,11 @@ continues until the bot reaches the target, at which point the board sends a ter
 
 #### Error Cases
 
-**Unknown Message:** If the bot sends an unknown message to the board, the board will respond with an error message, and
+- **Unknown Message:** If the bot sends an unknown message to the board, the board will respond with an error message, and
 the
 bot will not be able to continue playing.
 
-**Timeout:** If the bot does not respond to the board's messages within a certain time limit, the board will assume that
+- **Timeout:** If the bot does not respond to the board's messages within a certain time limit, the board will assume that
 the
 bot has timed out and will terminate the game.
 
@@ -73,6 +73,22 @@ bot has timed out and will terminate the game.
 
 ![Classdiagram](src/classdiagram.png)
 
+### States of the Board Actor System
+
+The board actor system has the following states:
+
+- `Setup`: The state when the board is being set up. The board is configured and the obstacles and target positions
+  are set. The board is not yet ready to receive messages from the bots.
+
+- `Register`: The state when the board is ready to receive messages from the bots. The board is listening for register
+  messages from the bots.
+
+- `Play`: The state when the race is ongoing. The board is receiving messages from the bots and updating their
+  positions accordingly.
+
+- `Pause`: The state when the race is paused. The board is not receiving messages from the bots and is not updating
+  their positions. The race can be resumed at any time.
+
 ## The Design of the Bot Actor System
 
 The bot actor system is designed to handle the behavior of the bots in the Bot-Race actor system. It consists of several
@@ -88,9 +104,18 @@ actors, each representing a bot.
 
 The bot actor system has the following states:
 
-- `Idle`: The initial state of the bot actor system. Bots are not yet registered.
-- `Running`: The state when the bot actors are running.
-- `Terminated`: The state when all the bot actors have terminated.
+- `PhaseStarting`: The state when the bot is initializing and preparing to register with the board actor system.
+
+- `PhaseRegister`: The state when the bot is registering with the board actor system. The bot is waiting for the board to
+  respond with a setup message.
+
+- `PhaseReady`: The state when the bot is ready to start the race. The bot is waiting for the board to start the race.
+
+- `PhasePlaying`: The state when the bot is playing the race. The bot is sending messages to the board to request
+  available directions and move to a new position.
+
+- `TargetReached`: The state when the bot has reached the target position. The bot is waiting for the board to terminate
+  the race.
 
 ### Termination of the Bot Actor System
 
